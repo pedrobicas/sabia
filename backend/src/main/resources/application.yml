@@ -1,0 +1,54 @@
+# Configuração do Sabiá.
+# Tudo que muda entre ambientes vem de variáveis de ambiente (veja .env.example na raiz do projeto).
+
+spring:
+  application:
+    name: sabia
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/sabia}
+    username: ${DB_USERNAME:sabia}
+    password: ${DB_PASSWORD:sabia}
+  jpa:
+    open-in-view: false
+    hibernate:
+      # O esquema é responsabilidade do Flyway (src/main/resources/db/migration).
+      ddl-auto: none
+  flyway:
+    placeholders:
+      # Dimensão dos vetores de embedding. Precisa bater com o modelo de embedding usado.
+      dimensoes: ${EMBEDDING_DIMENSIONS:1024}
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 11MB
+  mvc:
+    async:
+      request-timeout: 180s
+
+server:
+  port: ${PORT:8080}
+  # Necessário atrás do proxy das plataformas de nuvem (Render, Railway etc.).
+  forward-headers-strategy: framework
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+sabia:
+  jwt:
+    segredo: ${JWT_SEGREDO:troque-este-segredo-local-por-um-com-32-caracteres-ou-mais}
+    validade: ${JWT_VALIDADE:12h}
+  cadastro-aberto: ${CADASTRO_ABERTO:true}
+  limite-perguntas-por-hora: ${LIMITE_PERGUNTAS_POR_HORA:30}
+  rag:
+    trechos-por-busca: ${RAG_TRECHOS_POR_BUSCA:5}
+    similaridade-minima: ${RAG_SIMILARIDADE_MINIMA:0.4}
+    tamanho-trecho: ${RAG_TAMANHO_TRECHO:1200}
+    sobreposicao: ${RAG_SOBREPOSICAO:200}
+  cors:
+    origens: ${CORS_ORIGENS:}
+  demo:
+    habilitada: ${DEMO_HABILITADA:false}
+    senha: ${DEMO_SENHA:demo1234}

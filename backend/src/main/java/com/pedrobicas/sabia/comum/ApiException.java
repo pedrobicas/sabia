@@ -1,0 +1,45 @@
+package com.pedrobicas.sabia.comum;
+
+import org.springframework.http.HttpStatus;
+
+/**
+ * Erro de negócio com o status HTTP que deve chegar ao cliente.
+ * A mensagem é mostrada ao usuário, então ela é escrita para pessoas, não para logs.
+ */
+public class ApiException extends RuntimeException {
+
+    private final HttpStatus status;
+
+    public ApiException(HttpStatus status, String mensagem) {
+        super(mensagem);
+        this.status = status;
+    }
+
+    public HttpStatus getStatus() {
+        return status;
+    }
+
+    public static ApiException requisicaoInvalida(String mensagem) {
+        return new ApiException(HttpStatus.BAD_REQUEST, mensagem);
+    }
+
+    public static ApiException naoAutorizado(String mensagem) {
+        return new ApiException(HttpStatus.UNAUTHORIZED, mensagem);
+    }
+
+    public static ApiException proibido(String mensagem) {
+        return new ApiException(HttpStatus.FORBIDDEN, mensagem);
+    }
+
+    public static ApiException naoEncontrado(String mensagem) {
+        return new ApiException(HttpStatus.NOT_FOUND, mensagem);
+    }
+
+    public static ApiException conflito(String mensagem) {
+        return new ApiException(HttpStatus.CONFLICT, mensagem);
+    }
+
+    public static ApiException limiteExcedido(String mensagem) {
+        return new ApiException(HttpStatus.TOO_MANY_REQUESTS, mensagem);
+    }
+}
