@@ -34,6 +34,14 @@ CREATE TABLE vector_store (
     embedding  VECTOR(${dimensoes})
 );
 
-CREATE INDEX idx_vector_store_embedding ON vector_store USING hnsw (embedding vector_cosine_ops);
+-- O índice HNSW do pgvector aceita vetores de até 2000 dimensões. Modelos maiores
+-- (ex.: 3072) funcionam sem índice, com busca sequencial, o que é rápido para poucos milhares de trechos.
+DO $$
+BEGIN
+    IF ${dimensoes} <= 2000 THEN
+        CREATE INDEX idx_vector_store_embedding ON vector_store USING hnsw (embedding vector_cosine_ops);
+    END IF;
+END
+$$;
 CREATE INDEX idx_vector_store_empresa ON vector_store ((metadata ->> 'empresaId'));
 CREATE INDEX idx_vector_store_documento ON vector_store ((metadata ->> 'documentoId'));
