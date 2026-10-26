@@ -56,3 +56,21 @@ jobs:
         run: |
           erros=$(grep -E '^\[ERROR\]' build.log | head -25 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
           if [ -n "$erros" ]; then echo "::error title=Maven::${erros}"; fi
+
+  frontend:
+    name: Front-end (build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Instalar dependências
+        run: npm ci
+      - name: Build de produção
+        run: npm run build
