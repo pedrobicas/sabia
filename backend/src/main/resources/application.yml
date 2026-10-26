@@ -24,6 +24,29 @@ spring:
   mvc:
     async:
       request-timeout: 180s
+  ai:
+    # Cliente da OpenAI apontando para qualquer API compatível.
+    # Padrão: Ollama rodando local (http://localhost:11434). Na nuvem: OpenAI ou Gemini.
+    openai:
+      base-url: ${IA_BASE_URL:http://localhost:11434}
+      api-key: ${IA_API_KEY:ollama}
+      chat:
+        completions-path: ${IA_CHAT_PATH:/v1/chat/completions}
+        options:
+          model: ${IA_MODELO_CHAT:qwen2.5:3b}
+          temperature: 0.2
+      embedding:
+        embeddings-path: ${IA_EMBEDDINGS_PATH:/v1/embeddings}
+        options:
+          model: ${IA_MODELO_EMBEDDING:bge-m3}
+    vectorstore:
+      pgvector:
+        # A tabela é criada pelo Flyway (V2), com a dimensão de EMBEDDING_DIMENSIONS.
+        initialize-schema: false
+        table-name: vector_store
+        dimensions: ${EMBEDDING_DIMENSIONS:1024}
+        distance-type: COSINE_DISTANCE
+        index-type: HNSW
 
 server:
   port: ${PORT:8080}

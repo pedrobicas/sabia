@@ -5,3 +5,9 @@ sabia:
   limite-perguntas-por-hora: 0
   demo:
     habilitada: false
+  rag:
+    trechos-por-busca: 5
+    # O embedding falso dos testes não tem a mesma escala de similaridade de um modelo real.
+    similaridade-minima: 0.0
+    tamanho-trecho: 1200
+    sobreposicao: 200
