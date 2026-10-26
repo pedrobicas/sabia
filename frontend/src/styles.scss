@@ -1,0 +1,218 @@
+/*
+ * Sabiá: tokens e base.
+ *
+ * Paleta tirada do sabiá-laranjeira e do ato de consultar documentos:
+ * papel levemente esverdeado, tinta oliva, musgo para ações e o amarelo de marca-texto,
+ * reservado para o que é fonte (marcadores de citação e trechos citados).
+ */
+:root {
+  --papel: #f4f5f0;
+  --superficie: #fbfbf8;
+  --tinta: #1e2318;
+  --tinta-suave: #5c5f4f;
+  --linha: #d8dacd;
+  --linha-forte: #b9bcab;
+  --musgo: #3d5a2a;
+  --musgo-escuro: #2c431e;
+  --musgo-claro: #e3e9dc;
+  --marca-texto: #ebcb4e;
+  --marca-texto-suave: #f7eab0;
+  --erro: #9e3627;
+  --erro-fundo: #f6e3df;
+
+  --fonte-interface: 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --fonte-leitura: 'Literata Variable', Georgia, 'Times New Roman', serif;
+
+  /* Escala tipográfica 1,2 a partir de 16px */
+  --t-pequeno: 0.833rem;
+  --t-base: 1rem;
+  --t-medio: 1.2rem;
+  --t-grande: 1.44rem;
+  --t-titulo: 1.728rem;
+  --t-destaque: 2.488rem;
+
+  --raio: 6px;
+  --foco: 0 0 0 3px rgba(61, 90, 42, 0.35);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--papel);
+  color: var(--tinta);
+  font-family: var(--fonte-interface);
+  font-size: var(--t-base);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--fonte-leitura);
+  font-weight: 600;
+  line-height: 1.2;
+  margin: 0;
+}
+
+a {
+  color: var(--musgo);
+  text-underline-offset: 3px;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--foco);
+  border-radius: var(--raio);
+}
+
+/* Botões */
+.botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+  padding: 0 1.1rem;
+  border: 1px solid var(--musgo);
+  border-radius: var(--raio);
+  background: var(--musgo);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 120ms ease;
+
+  &:hover:not(:disabled) {
+    background: var(--musgo-escuro);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+}
+
+.botao-secundario {
+  @extend .botao;
+  background: transparent;
+  color: var(--musgo);
+
+  &:hover:not(:disabled) {
+    background: var(--musgo-claro);
+  }
+}
+
+.botao-texto {
+  border: 0;
+  background: none;
+  padding: 0.25rem 0.4rem;
+  color: var(--tinta-suave);
+  font: inherit;
+  font-size: var(--t-pequeno);
+  cursor: pointer;
+  border-radius: var(--raio);
+
+  &:hover {
+    color: var(--tinta);
+    text-decoration: underline;
+  }
+
+  &.perigo:hover {
+    color: var(--erro);
+  }
+}
+
+/* Formulários */
+.campo {
+  display: grid;
+  gap: 0.35rem;
+
+  label {
+    font-weight: 700;
+    font-size: var(--t-pequeno);
+  }
+
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: var(--tinta);
+    background: var(--superficie);
+    border: 1px solid var(--linha-forte);
+    border-radius: var(--raio);
+    padding: 0.6rem 0.75rem;
+
+    &:focus {
+      outline: none;
+      border-color: var(--musgo);
+      box-shadow: var(--foco);
+    }
+  }
+
+  .dica {
+    color: var(--tinta-suave);
+    font-size: var(--t-pequeno);
+  }
+}
+
+.alerta-erro {
+  border-left: 3px solid var(--erro);
+  background: var(--erro-fundo);
+  color: var(--erro);
+  padding: 0.6rem 0.8rem;
+  border-radius: 0 var(--raio) var(--raio) 0;
+  font-size: var(--t-pequeno);
+}
+
+/* Tabelas */
+.tabela {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    text-align: left;
+    font-size: var(--t-pequeno);
+    color: var(--tinta-suave);
+    font-weight: 700;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--linha-forte);
+  }
+
+  td {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--linha);
+    vertical-align: top;
+  }
+}
+
+.so-leitor-de-tela {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
