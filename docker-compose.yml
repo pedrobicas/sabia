@@ -1,0 +1,69 @@
+# Ambiente local do Sabiá.
+#
+#   docker compose up -d db                      -> só o banco (para rodar o back-end pela IDE)
+#   docker compose --profile app up --build      -> banco + aplicação completa em http://localhost:8080
+#   docker compose --profile ollama up -d        -> Ollama em container, já baixando os modelos
+#
+# A aplicação procura o Ollama em http://host.docker.internal:11434 (Ollama instalado no seu computador).
+# Para usar o Ollama do container, coloque IA_BASE_URL=http://ollama:11434 no arquivo .env.
+
+name: sabia
+
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_DB: sabia
+      POSTGRES_USER: sabia
+      POSTGRES_PASSWORD: sabia
+    ports:
+      - "5432:5432"
+    volumes:
+      - banco:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sabia -d sabia"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    profiles: ["app"]
+    ports:
+      - "8080:8080"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/sabia
+      DB_USERNAME: sabia
+      DB_PASSWORD: sabia
+      IA_BASE_URL: ${IA_BASE_URL:-http://host.docker.internal:11434}
+      DEMO_HABILITADA: ${DEMO_HABILITADA:-true}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  ollama:
+    image: ollama/ollama
+    profiles: ["ollama"]
+    ports:
+      - "11434:11434"
+    volumes:
+      - modelos:/root/.ollama
+
+  ollama-modelos:
+    image: ollama/ollama
+    profiles: ["ollama"]
+    depends_on:
+      - ollama
+    environment:
+      OLLAMA_HOST: ollama:11434
+    entrypoint: ["/bin/sh", "-c", "sleep 5 && ollama pull ${IA_MODELO_CHAT:-qwen2.5:3b} && ollama pull ${IA_MODELO_EMBEDDING:-bge-m3}"]
+    restart: "no"
+
+volumes:
+  banco:
+  modelos:

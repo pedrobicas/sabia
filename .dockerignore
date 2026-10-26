@@ -1,0 +1,15 @@
+.git
+.github
+.idea
+.vscode
+docs-pessoais
+docs
+avaliacao
+**/node_modules
+**/dist
+**/.angular
+backend/target
+backend/src/main/resources/static
+.env
+*.md
+
