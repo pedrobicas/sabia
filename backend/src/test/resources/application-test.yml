@@ -1,0 +1,7 @@
+sabia:
+  jwt:
+    segredo: segredo-usado-apenas-nos-testes-automatizados-1234567890
+  cadastro-aberto: true
+  limite-perguntas-por-hora: 0
+  demo:
+    habilitada: false
