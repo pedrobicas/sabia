@@ -1,12 +1,16 @@
 package com.pedrobicas.sabia.suporte;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -53,6 +57,34 @@ public class ApiDeTeste {
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         return json.readTree(resposta).get("token").asText();
+    }
+
+    /** Envia um documento de texto e espera o processamento em segundo plano terminar. Devolve o ID. */
+    public String enviarDocumentoProcessado(String token, String nome, String conteudo) throws Exception {
+        String resposta = mvc.perform(multipart("/api/documentos")
+                .file(new MockMultipartFile("arquivo", nome, "text/plain", conteudo.getBytes(StandardCharsets.UTF_8)))
+                .header("Authorization", bearer(token)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String id = json.readTree(resposta).get("id").asText();
+        for (int tentativa = 0; tentativa < 50; tentativa++) {
+            String lista = mvc.perform(get("/api/documentos").header("Authorization", bearer(token)))
+                    .andReturn().getResponse().getContentAsString();
+            for (JsonNode documento : json.readTree(lista)) {
+                if (documento.get("id").asText().equals(id) && documento.get("status").asText().equals("PRONTO")) {
+                    return id;
+                }
+            }
+            Thread.sleep(200);
+        }
+        throw new AssertionError("O documento " + nome + " não ficou pronto em 10 segundos.");
+    }
+
+    public String novaConversa(String token) throws Exception {
+        String resposta = mvc.perform(post("/api/conversas").header("Authorization", bearer(token)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return json.readTree(resposta).get("id").asText();
     }
 
     public JsonNode ler(String conteudo) throws Exception {
