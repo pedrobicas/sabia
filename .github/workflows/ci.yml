@@ -38,9 +38,21 @@ jobs:
           java-version: '21'
           cache: maven
       - name: Compilar e rodar todos os testes
-        run: mvn -B verify
+        shell: bash
+        run: |
+          set -o pipefail
+          mvn -B verify 2>&1 | tee build.log
         env:
           SABIA_TESTE_BANCO_EXTERNO: 'true'
           SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/sabia_teste
           SPRING_DATASOURCE_USERNAME: sabia
           SPRING_DATASOURCE_PASSWORD: sabia
+      - name: Resumo dos testes
+        if: always()
+        run: python3 ../.github/scripts/resumo_testes.py
+      - name: Erros de compilação
+        if: failure()
+        shell: bash
+        run: |
+          erros=$(grep -E '^\[ERROR\]' build.log | head -25 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+          if [ -n "$erros" ]; then echo "::error title=Maven::${erros}"; fi
