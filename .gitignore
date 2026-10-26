@@ -1,0 +1,31 @@
+# Pasta pessoal com guias e anotações: nunca vai para o GitHub
+docs-pessoais/
+
+# Variáveis de ambiente locais
+.env
+*.env.local
+
+# Java / Maven
+backend/target/
+*.class
+*.log
+hs_err_pid*
+
+# Front-end
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+
+# Resultado do build copiado para dentro do back-end
+backend/src/main/resources/static/
+
+# IDEs e sistema
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+
+# Avaliação
+avaliacao/__pycache__/
