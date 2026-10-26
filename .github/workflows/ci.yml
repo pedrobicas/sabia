@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Back-end (build e testes)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_DB: sabia_teste
+          POSTGRES_USER: sabia
+          POSTGRES_PASSWORD: sabia
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U sabia -d sabia_teste"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Compilar e rodar todos os testes
+        shell: bash
+        run: |
+          set -o pipefail
+          mvn -B verify 2>&1 | tee build.log
+        env:
+          SABIA_TESTE_BANCO_EXTERNO: 'true'
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/sabia_teste
+          SPRING_DATASOURCE_USERNAME: sabia
+          SPRING_DATASOURCE_PASSWORD: sabia
+      - name: Resumo dos testes
+        if: always()
+        run: python3 ../.github/scripts/resumo_testes.py
+      - name: Erros de compilação
+        if: failure()
+        shell: bash
+        run: |
+          erros=$(grep -E '^\[ERROR\]' build.log | head -25 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+          if [ -n "$erros" ]; then echo "::error title=Maven::${erros}"; fi
