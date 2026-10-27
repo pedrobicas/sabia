@@ -58,7 +58,7 @@ jobs:
           if [ -n "$erros" ]; then echo "::error title=Maven::${erros}"; fi
 
   frontend:
-    name: Front-end (build)
+    name: Front-end (testes e build)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -72,6 +72,8 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Instalar dependências
         run: npm ci
+      - name: Testes (Vitest)
+        run: npm test
       - name: Build de produção
         run: npm run build
 

@@ -106,6 +106,12 @@
           "options": {
             "proxyConfig": "proxy.conf.json"
           }
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "tsconfig.spec.json"
+          }
         }
       }
     }
