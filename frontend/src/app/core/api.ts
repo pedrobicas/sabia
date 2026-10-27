@@ -3,11 +3,13 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import {
+  Avaliacao,
   ConfiguracaoPublica,
   Conversa,
   Documento,
   Membro,
   Mensagem,
+  PainelDeAnalises,
   Papel,
   RespostaDeLogin,
   Usuario,
@@ -76,12 +78,32 @@ export class Api {
     return this.http.post<Conversa>('/api/conversas', {});
   }
 
+  renomearConversa(id: string, titulo: string): Observable<Conversa> {
+    return this.http.patch<Conversa>(`/api/conversas/${id}`, { titulo });
+  }
+
   excluirConversa(id: string): Observable<void> {
     return this.http.delete<void>(`/api/conversas/${id}`);
   }
 
   mensagens(conversaId: string): Observable<Mensagem[]> {
     return this.http.get<Mensagem[]>(`/api/conversas/${conversaId}/mensagens`);
+  }
+
+  avaliar(conversaId: string, mensagemId: string, avaliacao: Avaliacao): Observable<Avaliacao> {
+    return this.http.put<Avaliacao>(`/api/conversas/${conversaId}/mensagens/${mensagemId}/avaliacao`, avaliacao);
+  }
+
+  removerAvaliacao(conversaId: string, mensagemId: string): Observable<void> {
+    return this.http.delete<void>(`/api/conversas/${conversaId}/mensagens/${mensagemId}/avaliacao`);
+  }
+
+  sugestoes(): Observable<string[]> {
+    return this.http.get<string[]>('/api/sugestoes');
+  }
+
+  analises(dias: number): Observable<PainelDeAnalises> {
+    return this.http.get<PainelDeAnalises>('/api/analises', { params: { dias } });
   }
 }
 

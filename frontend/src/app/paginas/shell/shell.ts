@@ -19,6 +19,7 @@ import { Marca } from './marca';
         <a routerLink="/chat" routerLinkActive="ativo">Conversas</a>
         <a routerLink="/documentos" routerLinkActive="ativo">Documentos</a>
         @if (sessao.admin()) {
+          <a routerLink="/analises" routerLinkActive="ativo">Análises</a>
           <a routerLink="/membros" routerLinkActive="ativo">Membros</a>
         }
       </nav>
@@ -37,6 +38,7 @@ import { Marca } from './marca';
     :host {
       display: grid;
       grid-template-rows: auto 1fr;
+      grid-template-columns: minmax(0, 1fr);
       height: 100dvh;
     }
     .barra {
@@ -105,6 +107,13 @@ import { Marca } from './marca';
         order: 3;
         width: 100%;
         margin-left: 0;
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+      nav a {
+        flex: none;
+        padding: 0.4rem 0.55rem;
+        font-size: 0.9rem;
       }
       .usuario {
         margin-left: auto;
