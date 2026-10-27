@@ -54,6 +54,10 @@ public class Conversa {
         }
     }
 
+    public void renomear(String novoTitulo) {
+        this.titulo = novoTitulo == null || novoTitulo.isBlank() ? TITULO_PADRAO : novoTitulo.strip();
+    }
+
     public void tocar() {
         this.atualizadoEm = Instant.now();
     }

@@ -63,10 +63,54 @@ export interface Citacao {
   similaridade: number;
 }
 
+export interface Avaliacao {
+  util: boolean;
+  comentario: string | null;
+}
+
 export interface Mensagem {
   id: string;
   papel: 'USUARIO' | 'ASSISTENTE';
   conteudo: string;
   citacoes: Citacao[];
+  /** Só nas respostas que quem perguntou avaliou. */
+  avaliacao?: Avaliacao | null;
   criadoEm: string;
+}
+
+export interface PerguntasDoDia {
+  /** Data no formato AAAA-MM-DD, no fuso da empresa. */
+  dia: string;
+  total: number;
+  semResposta: number;
+}
+
+export interface PerguntaSemResposta {
+  pergunta: string;
+  vezes: number;
+  ultimaVez: string;
+}
+
+export interface RespostaMalAvaliada {
+  pergunta: string | null;
+  resposta: string;
+  comentario: string | null;
+  quando: string;
+}
+
+export interface DocumentoCitado {
+  documento: string;
+  respostas: number;
+}
+
+export interface PainelDeAnalises {
+  periodoDias: number;
+  totalPerguntas: number;
+  semResposta: number;
+  avaliacoesPositivas: number;
+  avaliacoesNegativas: number;
+  perguntasPorDia: PerguntasDoDia[];
+  perguntasSemResposta: PerguntaSemResposta[];
+  respostasMalAvaliadas: RespostaMalAvaliada[];
+  documentosMaisCitados: DocumentoCitado[];
 }

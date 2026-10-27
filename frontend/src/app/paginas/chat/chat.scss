@@ -158,6 +158,14 @@
   }
 }
 
+.titulo-sugestoes {
+  font-family: var(--fonte-interface);
+  font-size: var(--t-pequeno);
+  font-weight: 700;
+  color: var(--tinta-suave);
+  margin-bottom: 0.6rem;
+}
+
 .sugestoes {
   display: flex;
   flex-wrap: wrap;

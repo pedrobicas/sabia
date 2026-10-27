@@ -7,5 +7,14 @@ import java.util.UUID;
 import com.pedrobicas.sabia.chat.Citacao;
 import com.pedrobicas.sabia.chat.PapelMensagem;
 
-public record MensagemResponse(UUID id, PapelMensagem papel, String conteudo, List<Citacao> citacoes, Instant criadoEm) {
+/**
+ * Uma mensagem da conversa. {@code avaliacao} só existe em respostas que o usuário avaliou.
+ */
+public record MensagemResponse(
+        UUID id,
+        PapelMensagem papel,
+        String conteudo,
+        List<Citacao> citacoes,
+        AvaliacaoResponse avaliacao,
+        Instant criadoEm) {
 }

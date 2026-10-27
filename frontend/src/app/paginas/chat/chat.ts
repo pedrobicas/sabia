@@ -4,8 +4,9 @@ import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { Api, salvarArquivo } from '../../core/api';
 import { mensagemDeErro } from '../../core/autenticacao';
 import { ChatAoVivo } from '../../core/chat-ao-vivo';
-import { Citacao, Conversa, Mensagem } from '../../core/modelos';
+import { Avaliacao, Citacao, Conversa, Mensagem } from '../../core/modelos';
 import { Sessao } from '../../core/sessao';
+import { AvaliacaoResposta } from './avaliacao-resposta';
 import { PerguntasPendentes } from './perguntas-pendentes';
 import { Resposta } from './resposta';
 
@@ -15,15 +16,9 @@ interface RespostaEmAndamento {
   citacoes: Citacao[];
 }
 
-const SUGESTOES = [
-  'Qual é a política de trocas?',
-  'Como funciona o programa de fidelidade?',
-  'Quantos dias de férias eu tenho?',
-];
-
 @Component({
   selector: 'app-chat',
-  imports: [RouterLink, RouterLinkActive, Resposta],
+  imports: [RouterLink, RouterLinkActive, Resposta, AvaliacaoResposta],
   template: `
     <div class="layout" [class.com-fonte]="fonteAberta()">
       <aside class="conversas" [class.aberta]="listaAberta()" aria-label="Conversas">
@@ -62,11 +57,14 @@ const SUGESTOES = [
             <div class="boas-vindas">
               <h1>O que você quer saber?</h1>
               <p>O Sabiá responde usando os documentos de {{ sessao.usuario()?.empresaNome }} e mostra de onde tirou cada informação.</p>
-              <div class="sugestoes">
-                @for (sugestao of sugestoes; track sugestao) {
-                  <button type="button" class="botao-secundario" (click)="usarSugestao(sugestao)">{{ sugestao }}</button>
-                }
-              </div>
+              @if (sugestoes().length > 0) {
+                <h2 class="titulo-sugestoes">Perguntas frequentes por aqui</h2>
+                <div class="sugestoes">
+                  @for (sugestao of sugestoes(); track sugestao) {
+                    <button type="button" class="botao-secundario" (click)="usarSugestao(sugestao)">{{ sugestao }}</button>
+                  }
+                </div>
+              }
             </div>
           }
 
@@ -75,6 +73,14 @@ const SUGESTOES = [
               <h2 class="pergunta">{{ mensagem.conteudo }}</h2>
             } @else {
               <app-resposta [texto]="mensagem.conteudo" [citacoes]="mensagem.citacoes" (citar)="abrirFonte($event)" />
+              @if (id(); as conversaId) {
+                <app-avaliacao-resposta
+                  [conversaId]="conversaId"
+                  [mensagemId]="mensagem.id"
+                  [avaliacao]="mensagem.avaliacao ?? null"
+                  (mudou)="guardarAvaliacao(mensagem.id, $event)"
+                />
+              }
             }
           }
 
@@ -149,7 +155,7 @@ export class Chat implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   protected readonly sessao = inject(Sessao);
 
-  protected readonly sugestoes = SUGESTOES;
+  protected readonly sugestoes = signal<string[]>([]);
   protected readonly conversas = signal<Conversa[]>([]);
   protected readonly mensagens = signal<Mensagem[]>([]);
   protected readonly emAndamento = signal<RespostaEmAndamento | null>(null);
@@ -172,6 +178,7 @@ export class Chat implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.carregarConversas();
+    this.api.sugestoes().subscribe({ next: (lista) => this.sugestoes.set(lista) });
   }
 
   ngOnDestroy(): void {
@@ -211,7 +218,11 @@ export class Chat implements OnInit, OnDestroy {
 
   protected usarSugestao(sugestao: string): void {
     this.pergunta.set(sugestao);
-    this.campo()?.nativeElement.focus();
+    this.perguntar();
+  }
+
+  protected guardarAvaliacao(mensagemId: string, avaliacao: Avaliacao | null): void {
+    this.mensagens.update((lista) => lista.map((m) => (m.id === mensagemId ? { ...m, avaliacao } : m)));
   }
 
   protected abrirFonte(citacao: Citacao): void {

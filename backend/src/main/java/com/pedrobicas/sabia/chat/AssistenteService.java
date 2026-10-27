@@ -70,7 +70,7 @@ public class AssistenteService {
         List<TrechoEncontrado> trechos = buscar(usuario.empresaId(), consulta);
         conversas.registrarPergunta(usuario, conversaId, pergunta);
 
-        Geracao geracao = new Geracao(conversaId, montador.citacoes(trechos));
+        Geracao geracao = new Geracao(conversaId, pergunta, montador.citacoes(trechos));
 
         // Nada relevante nos documentos: responde sem chamar o modelo (e sem custo).
         if (trechos.isEmpty()) {
@@ -111,13 +111,15 @@ public class AssistenteService {
 
         private final SseEmitter emissor = new SseEmitter(TEMPO_MAXIMO);
         private final UUID conversaId;
+        private final String pergunta;
         private final List<Citacao> candidatas;
         private final StringBuffer resposta = new StringBuffer();
         private final AtomicBoolean encerrada = new AtomicBoolean(false);
         private volatile Disposable assinatura;
 
-        Geracao(UUID conversaId, List<Citacao> candidatas) {
+        Geracao(UUID conversaId, String pergunta, List<Citacao> candidatas) {
             this.conversaId = conversaId;
+            this.pergunta = pergunta;
             this.candidatas = candidatas;
         }
 
@@ -125,7 +127,7 @@ public class AssistenteService {
             encerrada.set(true);
             enviar("citacoes", List.of());
             enviar("token", texto);
-            enviar("fim", conversas.registrarResposta(conversaId, texto, List.of()));
+            enviar("fim", conversas.registrarResposta(conversaId, pergunta, texto, List.of()));
             emissor.complete();
         }
 
@@ -169,7 +171,7 @@ public class AssistenteService {
             if (texto.isEmpty()) {
                 texto = MontadorDePrompt.SEM_INFORMACAO;
             }
-            enviar("fim", conversas.registrarResposta(conversaId, texto, montador.citacoesUsadas(texto, candidatas)));
+            enviar("fim", conversas.registrarResposta(conversaId, pergunta, texto, montador.citacoesUsadas(texto, candidatas)));
             completar();
         }
 
@@ -184,7 +186,7 @@ public class AssistenteService {
             }
             String parcial = resposta.toString().strip();
             if (!parcial.isEmpty()) {
-                conversas.registrarResposta(conversaId, parcial + "\n\n" + MontadorDePrompt.RESPOSTA_INTERROMPIDA,
+                conversas.registrarResposta(conversaId, pergunta, parcial + "\n\n" + MontadorDePrompt.RESPOSTA_INTERROMPIDA,
                         montador.citacoesUsadas(parcial, candidatas));
             }
             log.debug("Resposta da conversa {} interrompida: {}", conversaId, motivo);
