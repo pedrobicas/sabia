@@ -42,4 +42,8 @@ public class ApiException extends RuntimeException {
     public static ApiException limiteExcedido(String mensagem) {
         return new ApiException(HttpStatus.TOO_MANY_REQUESTS, mensagem);
     }
+
+    public static ApiException indisponivel(String mensagem) {
+        return new ApiException(HttpStatus.SERVICE_UNAVAILABLE, mensagem);
+    }
 }

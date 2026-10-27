@@ -25,6 +25,8 @@ public class MontadorDePrompt {
 
     public static final String SEM_INFORMACAO = "Não encontrei essa informação nos documentos da empresa.";
 
+    public static final String RESPOSTA_INTERROMPIDA = "(Resposta interrompida antes do fim.)";
+
     public static final String SISTEMA = """
             Você é o Sabiá, um assistente que responde perguntas sobre uma empresa usando somente \
             os trechos de documentos fornecidos na mensagem do usuário.
