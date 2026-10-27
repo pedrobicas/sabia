@@ -4,11 +4,13 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -17,8 +19,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pedrobicas.sabia.auth.UsuarioAtual;
 import com.pedrobicas.sabia.busca.BuscaDeTrechos;
 import com.pedrobicas.sabia.busca.TrechoEncontrado;
-import com.pedrobicas.sabia.chat.dto.MensagemResponse;
+import com.pedrobicas.sabia.comum.ApiException;
 
+import reactor.core.Disposable;
+import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
 /**
@@ -32,6 +36,9 @@ import reactor.core.scheduler.Schedulers;
  * <li>{@code fim}: a mensagem salva, já com só as citações que a resposta usou;</li>
  * <li>{@code erro}: uma mensagem para mostrar ao usuário.</li>
  * </ul>
+ *
+ * <p>Se a pessoa fecha a página ou clica em "Parar", a geração é cancelada (para de consumir o
+ * modelo) e o que já tinha sido escrito fica salvo no histórico, marcado como interrompido.
  */
 @Service
 public class AssistenteService {
@@ -59,64 +66,151 @@ public class AssistenteService {
     public SseEmitter responder(UsuarioAtual usuario, UUID conversaId, String pergunta) {
         limitador.registrar(usuario.id());
         List<Message> historico = conversas.historicoParaOModelo(usuario, conversaId);
+        String consulta = ConsultaDeBusca.montar(pergunta, ultimaPerguntaDoUsuario(historico));
+        List<TrechoEncontrado> trechos = buscar(usuario.empresaId(), consulta);
         conversas.registrarPergunta(usuario, conversaId, pergunta);
 
-        List<TrechoEncontrado> trechos = busca.buscar(usuario.empresaId(), pergunta);
-        SseEmitter emissor = new SseEmitter(TEMPO_MAXIMO);
+        Geracao geracao = new Geracao(conversaId, montador.citacoes(trechos));
 
         // Nada relevante nos documentos: responde sem chamar o modelo (e sem custo).
         if (trechos.isEmpty()) {
-            enviar(emissor, "citacoes", List.of());
-            enviar(emissor, "token", MontadorDePrompt.SEM_INFORMACAO);
-            enviar(emissor, "fim", conversas.registrarResposta(conversaId, MontadorDePrompt.SEM_INFORMACAO, List.of()));
-            emissor.complete();
-            return emissor;
+            geracao.responderSemModelo(MontadorDePrompt.SEM_INFORMACAO);
+            return geracao.emissor;
         }
 
-        List<Citacao> candidatas = montador.citacoes(trechos);
-        enviar(emissor, "citacoes", candidatas);
-
-        StringBuilder resposta = new StringBuilder();
-        chatClient.prompt()
+        geracao.iniciar(chatClient.prompt()
                 .system(MontadorDePrompt.SISTEMA)
                 .messages(historico)
                 .user(montador.montarPergunta(pergunta, trechos))
                 .stream()
-                .content()
-                // Tira o processamento das threads de rede: salvar no banco é uma operação bloqueante.
-                .publishOn(Schedulers.boundedElastic())
-                .subscribe(
-                        pedaco -> {
-                            resposta.append(pedaco);
-                            enviar(emissor, "token", pedaco);
-                        },
-                        erro -> {
-                            log.warn("Falha ao gerar resposta da conversa {}", conversaId, erro);
-                            enviar(emissor, "erro", "O serviço de IA não respondeu. Tente de novo em instantes.");
-                            emissor.complete();
-                        },
-                        () -> {
-                            String texto = resposta.toString().strip();
-                            if (texto.isEmpty()) {
-                                texto = MontadorDePrompt.SEM_INFORMACAO;
-                            }
-                            MensagemResponse salva = conversas.registrarResposta(
-                                    conversaId, texto, montador.citacoesUsadas(texto, candidatas));
-                            enviar(emissor, "fim", salva);
-                            emissor.complete();
-                        });
-        return emissor;
+                .content());
+        return geracao.emissor;
     }
 
-    private void enviar(SseEmitter emissor, String evento, Object dados) {
+    private List<TrechoEncontrado> buscar(UUID empresaId, String consulta) {
         try {
-            // JSON preserva quebras de linha e espaços dos pedaços de texto.
-            emissor.send(SseEmitter.event().name(evento).data(json.writeValueAsString(dados)));
-        } catch (JsonProcessingException e) {
-            log.error("Não foi possível serializar o evento {}", evento, e);
-        } catch (IOException | IllegalStateException e) {
-            // O navegador fechou a conexão. A resposta continua sendo gerada e salva no histórico.
-            log.debug("Cliente desconectou durante o streaming: {}", e.getMessage());
+            return busca.buscar(empresaId, consulta);
+        } catch (RuntimeException e) {
+            // A busca precisa do modelo de embedding: se ele estiver fora do ar, avisamos com clareza.
+            log.warn("Falha ao buscar trechos", e);
+            throw ApiException.indisponivel("O serviço de IA não está respondendo agora. Tente de novo em instantes.");
+        }
+    }
+
+    private static String ultimaPerguntaDoUsuario(List<Message> historico) {
+        for (int i = historico.size() - 1; i >= 0; i--) {
+            if (historico.get(i) instanceof UserMessage pergunta) {
+                return pergunta.getText();
+            }
+        }
+        return null;
+    }
+
+    /** Estado de uma resposta em andamento. Garante que ela termina uma única vez, de um único jeito. */
+    private final class Geracao {
+
+        private final SseEmitter emissor = new SseEmitter(TEMPO_MAXIMO);
+        private final UUID conversaId;
+        private final List<Citacao> candidatas;
+        private final StringBuffer resposta = new StringBuffer();
+        private final AtomicBoolean encerrada = new AtomicBoolean(false);
+        private volatile Disposable assinatura;
+
+        Geracao(UUID conversaId, List<Citacao> candidatas) {
+            this.conversaId = conversaId;
+            this.candidatas = candidatas;
+        }
+
+        void responderSemModelo(String texto) {
+            encerrada.set(true);
+            enviar("citacoes", List.of());
+            enviar("token", texto);
+            enviar("fim", conversas.registrarResposta(conversaId, texto, List.of()));
+            emissor.complete();
+        }
+
+        void iniciar(Flux<String> fluxo) {
+            emissor.onTimeout(() -> interromper("tempo máximo atingido"));
+            emissor.onError(erro -> interromper("conexão encerrada"));
+            enviar("citacoes", candidatas);
+            assinatura = fluxo
+                    // Tira o processamento das threads de rede: salvar no banco é uma operação bloqueante.
+                    .publishOn(Schedulers.boundedElastic())
+                    .subscribe(this::aoReceber, this::aoFalhar, this::aoTerminar);
+            if (encerrada.get()) {
+                assinatura.dispose();
+            }
+        }
+
+        private void aoReceber(String pedaco) {
+            if (encerrada.get()) {
+                return;
+            }
+            resposta.append(pedaco);
+            if (!enviar("token", pedaco)) {
+                interromper("cliente desconectou");
+            }
+        }
+
+        private void aoFalhar(Throwable erro) {
+            if (!encerrada.compareAndSet(false, true)) {
+                return;
+            }
+            log.warn("Falha ao gerar resposta da conversa {}", conversaId, erro);
+            enviar("erro", "O serviço de IA não respondeu. Tente de novo em instantes.");
+            completar();
+        }
+
+        private void aoTerminar() {
+            if (!encerrada.compareAndSet(false, true)) {
+                return;
+            }
+            String texto = resposta.toString().strip();
+            if (texto.isEmpty()) {
+                texto = MontadorDePrompt.SEM_INFORMACAO;
+            }
+            enviar("fim", conversas.registrarResposta(conversaId, texto, montador.citacoesUsadas(texto, candidatas)));
+            completar();
+        }
+
+        /** Cancela a geração no modelo e guarda o que já tinha sido escrito. */
+        private void interromper(String motivo) {
+            if (!encerrada.compareAndSet(false, true)) {
+                return;
+            }
+            Disposable atual = assinatura;
+            if (atual != null) {
+                atual.dispose();
+            }
+            String parcial = resposta.toString().strip();
+            if (!parcial.isEmpty()) {
+                conversas.registrarResposta(conversaId, parcial + "\n\n" + MontadorDePrompt.RESPOSTA_INTERROMPIDA,
+                        montador.citacoesUsadas(parcial, candidatas));
+            }
+            log.debug("Resposta da conversa {} interrompida: {}", conversaId, motivo);
+            completar();
+        }
+
+        /** Envia um evento. Devolve false se o navegador já fechou a conexão. */
+        private boolean enviar(String evento, Object dados) {
+            try {
+                // JSON preserva quebras de linha e espaços dos pedaços de texto.
+                emissor.send(SseEmitter.event().name(evento).data(json.writeValueAsString(dados)));
+                return true;
+            } catch (JsonProcessingException e) {
+                log.error("Não foi possível serializar o evento {}", evento, e);
+                return true;
+            } catch (IOException | IllegalStateException e) {
+                return false;
+            }
+        }
+
+        private void completar() {
+            try {
+                emissor.complete();
+            } catch (IllegalStateException e) {
+                // Já encerrado pelo próprio servidor (tempo esgotado ou conexão perdida).
+            }
         }
     }
 }

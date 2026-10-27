@@ -9,6 +9,7 @@ import org.springframework.ai.document.Document;
  * Um trecho devolvido pela busca, já com os dados que a citação precisa.
  */
 public record TrechoEncontrado(
+        String id,
         UUID empresaId,
         UUID documentoId,
         String documentoNome,
@@ -17,15 +18,19 @@ public record TrechoEncontrado(
         double similaridade) {
 
     static TrechoEncontrado de(Document documento) {
-        Map<String, Object> metadata = documento.getMetadata();
         Double score = documento.getScore();
+        return de(documento.getId(), documento.getText(), documento.getMetadata(), score == null ? 0.0 : score);
+    }
+
+    static TrechoEncontrado de(String id, String texto, Map<String, Object> metadata, double similaridade) {
         return new TrechoEncontrado(
+                id,
                 uuid(metadata.get(MetadadosDoTrecho.EMPRESA)),
                 uuid(metadata.get(MetadadosDoTrecho.DOCUMENTO)),
                 String.valueOf(metadata.getOrDefault(MetadadosDoTrecho.NOME_DOCUMENTO, "Documento")),
                 inteiro(metadata.get(MetadadosDoTrecho.PAGINA)),
-                documento.getText(),
-                score == null ? 0.0 : score);
+                texto,
+                similaridade);
     }
 
     private static UUID uuid(Object valor) {

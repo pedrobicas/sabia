@@ -74,6 +74,6 @@ class MontadorDePromptTest {
     }
 
     private TrechoEncontrado trecho(String documento, Integer pagina, String texto) {
-        return new TrechoEncontrado(empresa, UUID.randomUUID(), documento, pagina, texto, 0.8);
+        return new TrechoEncontrado(UUID.randomUUID().toString(), empresa, UUID.randomUUID(), documento, pagina, texto, 0.8);
     }
 }
