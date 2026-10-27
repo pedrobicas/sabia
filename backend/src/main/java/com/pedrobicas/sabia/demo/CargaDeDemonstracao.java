@@ -37,8 +37,14 @@ public class CargaDeDemonstracao {
     private static final Logger log = LoggerFactory.getLogger(CargaDeDemonstracao.class);
 
     private static final List<EmpresaDemo> EMPRESAS = List.of(
-            new EmpresaDemo("Café Aurora", "demo@cafeaurora.com", "cafe-aurora"),
-            new EmpresaDemo("Livraria Horizonte", "demo@livrariahorizonte.com", "livraria-horizonte"));
+            new EmpresaDemo("Café Aurora", "demo@cafeaurora.com", "cafe-aurora", List.of(
+                    "Posso trocar um produto sem a nota fiscal?",
+                    "Quantos dias de férias eu tenho?",
+                    "Como funciona o Clube Aurora?",
+                    "Vocês fazem entrega?")),
+            new EmpresaDemo("Livraria Horizonte", "demo@livrariahorizonte.com", "livraria-horizonte", List.of(
+                    "Até quando posso devolver um livro?",
+                    "Quando o clube do livro se reúne?")));
 
     private final PropriedadesSabia propriedades;
     private final EmpresaRepository empresas;
@@ -84,6 +90,18 @@ public class CargaDeDemonstracao {
                 .toList();
     }
 
+    /** Sugestões de pergunta para uma empresa de demonstração, enquanto ela ainda não tem histórico. */
+    public List<String> sugestoesPara(String nomeDaEmpresa) {
+        if (!propriedades.demo().habilitada()) {
+            return List.of();
+        }
+        return EMPRESAS.stream()
+                .filter(demo -> demo.nome().equals(nomeDaEmpresa))
+                .findFirst()
+                .map(EmpresaDemo::sugestoes)
+                .orElse(List.of());
+    }
+
     private void criar(EmpresaDemo demo) throws IOException {
         Empresa empresa = empresas.save(new Empresa(demo.nome()));
         Usuario usuario = usuarios.save(new Usuario(empresa.getId(), "Visitante da demonstração", demo.email(),
@@ -98,6 +116,6 @@ public class CargaDeDemonstracao {
         log.info("Empresa de demonstração {} criada com {} documento(s)", demo.nome(), arquivos.length);
     }
 
-    private record EmpresaDemo(String nome, String email, String pasta) {
+    private record EmpresaDemo(String nome, String email, String pasta, List<String> sugestoes) {
     }
 }

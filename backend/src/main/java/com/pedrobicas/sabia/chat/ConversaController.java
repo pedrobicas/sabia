@@ -7,8 +7,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -16,10 +18,13 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.pedrobicas.sabia.auth.UsuarioAtual;
+import com.pedrobicas.sabia.chat.dto.AvaliacaoRequest;
+import com.pedrobicas.sabia.chat.dto.AvaliacaoResponse;
 import com.pedrobicas.sabia.chat.dto.ConversaResponse;
 import com.pedrobicas.sabia.chat.dto.MensagemResponse;
 import com.pedrobicas.sabia.chat.dto.NovaConversaRequest;
 import com.pedrobicas.sabia.chat.dto.PerguntaRequest;
+import com.pedrobicas.sabia.chat.dto.RenomearConversaRequest;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -49,6 +54,27 @@ public class ConversaController {
     @Operation(summary = "Cria uma conversa")
     public ConversaResponse criar(UsuarioAtual usuario, @Valid @RequestBody(required = false) NovaConversaRequest pedido) {
         return conversas.criar(usuario, pedido == null ? null : pedido.titulo());
+    }
+
+    @PatchMapping("/{id}")
+    @Operation(summary = "Renomeia a conversa")
+    public ConversaResponse renomear(UsuarioAtual usuario, @PathVariable UUID id,
+            @Valid @RequestBody RenomearConversaRequest pedido) {
+        return conversas.renomear(usuario, id, pedido.titulo());
+    }
+
+    @PutMapping("/{id}/mensagens/{mensagemId}/avaliacao")
+    @Operation(summary = "Avalia uma resposta como útil ou não, com comentário opcional")
+    public AvaliacaoResponse avaliar(UsuarioAtual usuario, @PathVariable UUID id, @PathVariable UUID mensagemId,
+            @Valid @RequestBody AvaliacaoRequest pedido) {
+        return conversas.avaliar(usuario, id, mensagemId, pedido.util(), pedido.comentario());
+    }
+
+    @DeleteMapping("/{id}/mensagens/{mensagemId}/avaliacao")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Remove a avaliação de uma resposta")
+    public void removerAvaliacao(UsuarioAtual usuario, @PathVariable UUID id, @PathVariable UUID mensagemId) {
+        conversas.removerAvaliacao(usuario, id, mensagemId);
     }
 
     @DeleteMapping("/{id}")

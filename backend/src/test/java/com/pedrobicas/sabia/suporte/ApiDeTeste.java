@@ -3,6 +3,7 @@ package com.pedrobicas.sabia.suporte;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.nio.charset.StandardCharsets;
@@ -12,6 +13,7 @@ import java.util.UUID;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -85,6 +87,19 @@ public class ApiDeTeste {
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         return json.readTree(resposta).get("id").asText();
+    }
+
+    /** Faz uma pergunta e devolve o corpo do streaming (eventos SSE) quando a resposta termina. */
+    public String perguntar(String token, String conversa, String pergunta) throws Exception {
+        MvcResult resultado = mvc.perform(post("/api/conversas/" + conversa + "/perguntas")
+                .header("Authorization", bearer(token))
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.TEXT_EVENT_STREAM, MediaType.APPLICATION_PROBLEM_JSON)
+                .content(json.writeValueAsString(Map.of("pergunta", pergunta))))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+        resultado.getAsyncResult(10_000);
+        return resultado.getResponse().getContentAsString(StandardCharsets.UTF_8);
     }
 
     public JsonNode ler(String conteudo) throws Exception {

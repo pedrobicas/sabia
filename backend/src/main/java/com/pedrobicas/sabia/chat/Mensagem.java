@@ -34,18 +34,38 @@ public class Mensagem {
     @Column(columnDefinition = "text")
     private String citacoes;
 
+    /** Nas respostas: a pergunta que originou a resposta (usada no painel de análises). */
+    @Column(columnDefinition = "text")
+    private String pergunta;
+
+    /** Nas respostas: true quando o assistente não encontrou a informação nos documentos. */
+    @Column(name = "sem_resposta", nullable = false)
+    private boolean semResposta;
+
     @Column(name = "criado_em", nullable = false)
     private Instant criadoEm;
 
     protected Mensagem() {
     }
 
-    public Mensagem(UUID conversaId, PapelMensagem papel, String conteudo, String citacoes) {
+    private Mensagem(UUID conversaId, PapelMensagem papel, String conteudo, String citacoes, String pergunta,
+            boolean semResposta) {
         this.conversaId = conversaId;
         this.papel = papel;
         this.conteudo = conteudo;
         this.citacoes = citacoes;
+        this.pergunta = pergunta;
+        this.semResposta = semResposta;
         this.criadoEm = Instant.now();
+    }
+
+    public static Mensagem doUsuario(UUID conversaId, String pergunta) {
+        return new Mensagem(conversaId, PapelMensagem.USUARIO, pergunta, null, null, false);
+    }
+
+    public static Mensagem doAssistente(UUID conversaId, String pergunta, String resposta, String citacoes,
+            boolean semResposta) {
+        return new Mensagem(conversaId, PapelMensagem.ASSISTENTE, resposta, citacoes, pergunta, semResposta);
     }
 
     public UUID getId() {
@@ -66,6 +86,14 @@ public class Mensagem {
 
     public String getCitacoes() {
         return citacoes;
+    }
+
+    public String getPergunta() {
+        return pergunta;
+    }
+
+    public boolean isSemResposta() {
+        return semResposta;
     }
 
     public Instant getCriadoEm() {
