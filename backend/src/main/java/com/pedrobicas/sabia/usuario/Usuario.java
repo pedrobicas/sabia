@@ -51,6 +51,10 @@ public class Usuario {
         this.criadoEm = Instant.now();
     }
 
+    public void trocarSenha(String novoHash) {
+        this.senhaHash = novoHash;
+    }
+
     public UUID getId() {
         return id;
     }

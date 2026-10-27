@@ -37,6 +37,11 @@ export const routes: Routes = [
         loadComponent: () => import('./paginas/documentos/documentos').then((m) => m.Documentos),
       },
       {
+        path: 'conta',
+        title: 'Minha conta · Sabiá',
+        loadComponent: () => import('./paginas/conta/conta').then((m) => m.Conta),
+      },
+      {
         path: 'analises',
         canActivate: [somenteAdmin],
         title: 'Análises · Sabiá',

@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.pedrobicas.sabia.auth.dto.CadastroRequest;
 import com.pedrobicas.sabia.auth.dto.LoginRequest;
 import com.pedrobicas.sabia.auth.dto.TokenResponse;
+import com.pedrobicas.sabia.auth.dto.TrocaDeSenhaRequest;
 import com.pedrobicas.sabia.auth.dto.UsuarioResponse;
 import com.pedrobicas.sabia.comum.ApiException;
 import com.pedrobicas.sabia.config.PropriedadesSabia;
@@ -26,14 +27,16 @@ public class AuthService {
     private final PasswordEncoder senhas;
     private final TokenService tokens;
     private final PropriedadesSabia propriedades;
+    private final LimitadorDeLogin limitador;
 
     public AuthService(EmpresaRepository empresas, UsuarioRepository usuarios, PasswordEncoder senhas,
-            TokenService tokens, PropriedadesSabia propriedades) {
+            TokenService tokens, PropriedadesSabia propriedades, LimitadorDeLogin limitador) {
         this.empresas = empresas;
         this.usuarios = usuarios;
         this.senhas = senhas;
         this.tokens = tokens;
         this.propriedades = propriedades;
+        this.limitador = limitador;
     }
 
     /** Cria uma empresa nova e o primeiro administrador dela. */
@@ -52,13 +55,37 @@ public class AuthService {
         return new TokenResponse(tokens.gerar(admin), UsuarioResponse.de(admin, empresa));
     }
 
+    /** Confere e-mail e senha. Depois de várias falhas seguidas, o e-mail (e o IP) ficam bloqueados por um tempo. */
     @Transactional(readOnly = true)
-    public TokenResponse entrar(LoginRequest pedido) {
-        Usuario usuario = usuarios.findByEmail(normalizarEmail(pedido.email()))
+    public TokenResponse entrar(LoginRequest pedido, String ip) {
+        String email = normalizarEmail(pedido.email());
+        limitador.verificar(email, ip);
+        Usuario usuario = usuarios.findByEmail(email)
                 .filter(u -> senhas.matches(pedido.senha(), u.getSenhaHash()))
-                .orElseThrow(() -> ApiException.naoAutorizado("E-mail ou senha inválidos."));
+                .orElseThrow(() -> {
+                    limitador.registrarFalha(email, ip);
+                    return ApiException.naoAutorizado("E-mail ou senha inválidos.");
+                });
+        limitador.registrarSucesso(email);
         Empresa empresa = buscarEmpresa(usuario);
         return new TokenResponse(tokens.gerar(usuario), UsuarioResponse.de(usuario, empresa));
+    }
+
+    /** Troca a senha de quem está logado. Pede a senha atual para um token esquecido aberto não bastar. */
+    @Transactional
+    public void trocarSenha(UsuarioAtual atual, TrocaDeSenhaRequest pedido, String ip) {
+        Usuario usuario = usuarios.findByIdAndEmpresaId(atual.id(), atual.empresaId())
+                .orElseThrow(() -> ApiException.naoAutorizado("Sua conta não existe mais. Entre novamente."));
+        limitador.verificar(usuario.getEmail(), ip);
+        if (!senhas.matches(pedido.senhaAtual(), usuario.getSenhaHash())) {
+            limitador.registrarFalha(usuario.getEmail(), ip);
+            throw ApiException.requisicaoInvalida("A senha atual não confere.");
+        }
+        if (pedido.novaSenha().equals(pedido.senhaAtual())) {
+            throw ApiException.requisicaoInvalida("A nova senha precisa ser diferente da atual.");
+        }
+        usuario.trocarSenha(senhas.encode(pedido.novaSenha()));
+        usuarios.save(usuario);
     }
 
     @Transactional(readOnly = true)

@@ -44,6 +44,21 @@ public class IndiceDeTrechos {
                 documentoId.toString());
     }
 
+    /** Os trechos de um documento na ordem em que aparecem no arquivo. */
+    public List<TrechoIndexado> trechosDoDocumento(UUID documentoId) {
+        return jdbc.query("""
+                SELECT content,
+                       coalesce((metadata ->> 'ordem')::int, 0) AS ordem,
+                       (metadata ->> 'pagina')::int AS pagina
+                FROM vector_store
+                WHERE metadata ->> 'documentoId' = ?
+                ORDER BY ordem
+                """, (linha, numero) -> new TrechoIndexado(
+                linha.getInt("ordem"),
+                linha.getObject("pagina", Integer.class),
+                linha.getString("content")), documentoId.toString());
+    }
+
     static Document paraDocument(Documento documento, Trecho trecho) {
         Map<String, Object> metadata = new HashMap<>();
         metadata.put(MetadadosDoTrecho.EMPRESA, documento.getEmpresaId().toString());

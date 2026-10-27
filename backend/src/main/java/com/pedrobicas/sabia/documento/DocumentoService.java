@@ -11,6 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.pedrobicas.sabia.auth.UsuarioAtual;
 import com.pedrobicas.sabia.busca.IndiceDeTrechos;
+import com.pedrobicas.sabia.busca.TrechoIndexado;
 import com.pedrobicas.sabia.comum.ApiException;
 import com.pedrobicas.sabia.documento.ingestao.DocumentoEnviadoEvent;
 
@@ -52,6 +53,7 @@ public class DocumentoService {
 
     /**
      * Salva o documento e o arquivo original e coloca na fila de processamento.
+     * Se a empresa já tem um documento com o mesmo nome, ele é atualizado (nova versão) em vez de duplicado.
      * Usado pelo upload e pela carga de dados de demonstração.
      */
     @Transactional
@@ -62,10 +64,20 @@ public class DocumentoService {
         if (conteudo.length == 0) {
             throw ApiException.requisicaoInvalida("O arquivo está vazio.");
         }
-        Documento documento = documentos.save(new Documento(empresaId, nome, tipo, conteudo.length, enviadoPor));
+        Documento documento = documentos.findFirstByEmpresaIdAndNomeOrderByCriadoEmDesc(empresaId, nome)
+                .map(existente -> novaVersao(existente, tipo, conteudo.length, enviadoPor))
+                .orElseGet(() -> new Documento(empresaId, nome, tipo, conteudo.length, enviadoPor));
+        documento = documentos.save(documento);
         arquivos.save(new DocumentoArquivo(documento.getId(), conteudo));
         eventos.publishEvent(new DocumentoEnviadoEvent(documento.getId()));
         return DocumentoResponse.de(documento);
+    }
+
+    /** Os trechos que o assistente consulta, na ordem do documento. Ajuda a conferir o que foi extraído. */
+    @Transactional(readOnly = true)
+    public List<TrechoIndexado> trechos(UsuarioAtual atual, UUID id) {
+        Documento documento = buscar(atual.empresaId(), id);
+        return indice.trechosDoDocumento(documento.getId());
     }
 
     @Transactional
@@ -95,6 +107,15 @@ public class DocumentoService {
                 .map(DocumentoArquivo::getConteudo)
                 .orElseThrow(() -> ApiException.naoEncontrado("Arquivo original não encontrado."));
         return new ArquivoBaixado(documento.getNome(), documento.getTipo().mediaType(), conteudo);
+    }
+
+    private static Documento novaVersao(Documento existente, TipoDocumento tipo, long tamanho, UUID enviadoPor) {
+        if (existente.getStatus().naFila()) {
+            throw ApiException.conflito("A versão anterior de " + existente.getNome()
+                    + " ainda está sendo processada. Espere terminar e envie de novo.");
+        }
+        existente.substituirArquivo(tipo, tamanho, enviadoPor);
+        return existente;
     }
 
     private Documento buscar(UUID empresaId, UUID id) {

@@ -46,6 +46,9 @@ public class Documento {
     @Column(name = "enviado_por")
     private UUID enviadoPor;
 
+    @Column(nullable = false)
+    private int versao;
+
     @Column(name = "criado_em", nullable = false)
     private Instant criadoEm;
 
@@ -61,9 +64,22 @@ public class Documento {
         this.tipo = tipo;
         this.tamanhoBytes = tamanhoBytes;
         this.enviadoPor = enviadoPor;
+        this.versao = 1;
         this.status = StatusDocumento.ENVIADO;
         this.criadoEm = Instant.now();
         this.atualizadoEm = this.criadoEm;
+    }
+
+    /**
+     * Um arquivo novo com o mesmo nome chegou: o documento ganha uma versão nova e volta para a fila.
+     * Os trechos antigos ficam no índice até o processamento da versão nova substituí-los.
+     */
+    public void substituirArquivo(TipoDocumento novoTipo, long novoTamanho, UUID quemEnviou) {
+        this.tipo = novoTipo;
+        this.tamanhoBytes = novoTamanho;
+        this.enviadoPor = quemEnviou;
+        this.versao++;
+        voltarParaFila();
     }
 
     public void marcarProcessando() {
@@ -130,6 +146,10 @@ public class Documento {
 
     public UUID getEnviadoPor() {
         return enviadoPor;
+    }
+
+    public int getVersao() {
+        return versao;
     }
 
     public Instant getCriadoEm() {

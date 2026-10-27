@@ -65,6 +65,13 @@ sabia:
     validade: ${JWT_VALIDADE:12h}
   cadastro-aberto: ${CADASTRO_ABERTO:true}
   limite-perguntas-por-hora: ${LIMITE_PERGUNTAS_POR_HORA:30}
+  # Fuso usado para agrupar as perguntas por dia no painel de análises.
+  fuso-horario: ${FUSO_HORARIO:America/Sao_Paulo}
+  login:
+    # Senhas erradas permitidas por e-mail e por IP antes do bloqueio temporário (429).
+    tentativas-por-email: ${LOGIN_TENTATIVAS_POR_EMAIL:5}
+    tentativas-por-ip: ${LOGIN_TENTATIVAS_POR_IP:30}
+    janela-minutos: ${LOGIN_JANELA_MINUTOS:15}
   rag:
     trechos-por-busca: ${RAG_TRECHOS_POR_BUSCA:5}
     similaridade-minima: ${RAG_SIMILARIDADE_MINIMA:0.4}

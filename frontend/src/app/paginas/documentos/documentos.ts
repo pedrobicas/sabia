@@ -5,6 +5,7 @@ import { mensagemDeErro } from '../../core/autenticacao';
 import { data, tamanho } from '../../core/formatos';
 import { Documento, StatusDocumento } from '../../core/modelos';
 import { Sessao } from '../../core/sessao';
+import { PainelDeTrechos } from './painel-de-trechos';
 
 const ROTULO_DO_STATUS: Record<StatusDocumento, string> = {
   ENVIADO: 'Na fila',
@@ -22,6 +23,7 @@ const ROTULO_DO_TIPO: Record<Documento['tipo'], string> = {
 
 @Component({
   selector: 'app-documentos',
+  imports: [PainelDeTrechos],
   template: `
     <div class="pagina">
       <header>
@@ -48,6 +50,7 @@ const ROTULO_DO_TIPO: Record<Documento['tipo'], string> = {
           <input type="file" multiple accept=".pdf,.docx,.txt,.md,.markdown" (change)="aoEscolher($event)" />
           <strong>{{ enviando() ? 'Enviando...' : 'Escolha arquivos ou arraste para cá' }}</strong>
           <span>PDF, Word (.docx), texto ou Markdown, até 10 MB cada.</span>
+          <span>Um arquivo com o mesmo nome de um documento existente atualiza esse documento.</span>
         </label>
       } @else {
         <p class="aviso-membro">Só administradores enviam e excluem documentos. Você pode consultar a lista e baixar os originais.</p>
@@ -55,6 +58,9 @@ const ROTULO_DO_TIPO: Record<Documento['tipo'], string> = {
 
       @if (erro()) {
         <p class="alerta-erro" role="alert">{{ erro() }}</p>
+      }
+      @if (aviso()) {
+        <p class="aviso-envio" role="status">{{ aviso() }}</p>
       }
 
       @if (carregado() && documentos().length === 0) {
@@ -87,6 +93,9 @@ const ROTULO_DO_TIPO: Record<Documento['tipo'], string> = {
                 <tr>
                   <td class="nome">
                     {{ documento.nome }}
+                    @if (documento.versao > 1) {
+                      <span class="versao" [title]="'Atualizado em ' + atualizadoEm(documento)">versão {{ documento.versao }}</span>
+                    }
                     @if (documento.erro) {
                       <span class="erro-documento">{{ documento.erro }}</span>
                     }
@@ -99,6 +108,9 @@ const ROTULO_DO_TIPO: Record<Documento['tipo'], string> = {
                   <td class="numero">{{ documento.status === 'PRONTO' ? documento.totalTrechos : '' }}</td>
                   <td class="numero">{{ dataDe(documento) }}</td>
                   <td class="acoes">
+                    @if (documento.status === 'PRONTO') {
+                      <button type="button" class="botao-texto" (click)="abrirTrechos(documento, $event)">Ver trechos</button>
+                    }
                     <button type="button" class="botao-texto" (click)="baixar(documento)">Baixar</button>
                     @if (sessao.admin()) {
                       <button
@@ -117,6 +129,10 @@ const ROTULO_DO_TIPO: Record<Documento['tipo'], string> = {
         </div>
       }
     </div>
+
+    @if (trechosDe(); as documento) {
+      <app-painel-de-trechos [documento]="documento" (fechar)="fecharTrechos()" />
+    }
   `,
   styles: `
     .pagina {
@@ -163,6 +179,26 @@ const ROTULO_DO_TIPO: Record<Documento['tipo'], string> = {
     .aviso-membro {
       margin: 0;
       color: var(--tinta-suave);
+    }
+    .aviso-envio {
+      margin: 0;
+      padding: 0.6rem 0.8rem;
+      border-left: 3px solid var(--musgo);
+      border-radius: 0 var(--raio) var(--raio) 0;
+      background: var(--musgo-claro);
+      color: var(--musgo-escuro);
+      font-size: var(--t-pequeno);
+    }
+    .versao {
+      display: inline-block;
+      margin-left: 0.4rem;
+      padding: 0 0.4rem;
+      border: 1px solid var(--linha-forte);
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 400;
+      color: var(--tinta-suave);
+      vertical-align: 0.1em;
     }
     .vazio {
       padding: 3rem 1rem;
@@ -241,6 +277,9 @@ export class Documentos implements OnInit, OnDestroy {
   protected readonly enviando = signal(false);
   protected readonly arrastando = signal(false);
   protected readonly erro = signal<string | null>(null);
+  protected readonly aviso = signal<string | null>(null);
+  protected readonly trechosDe = signal<Documento | null>(null);
+  private origemDosTrechos: HTMLElement | null = null;
   private readonly temPendentes = computed(() =>
     this.documentos().some((d) => d.status === 'ENVIADO' || d.status === 'PROCESSANDO'),
   );
@@ -276,6 +315,22 @@ export class Documentos implements OnInit, OnDestroy {
 
   protected dataDe(documento: Documento): string {
     return data(documento.criadoEm);
+  }
+
+  protected atualizadoEm(documento: Documento): string {
+    return data(documento.atualizadoEm);
+  }
+
+  protected abrirTrechos(documento: Documento, evento: Event): void {
+    this.origemDosTrechos = evento.currentTarget as HTMLElement;
+    this.trechosDe.set(documento);
+  }
+
+  protected fecharTrechos(): void {
+    this.trechosDe.set(null);
+    // Devolve o foco para o botão que abriu o painel.
+    this.origemDosTrechos?.focus();
+    this.origemDosTrechos = null;
   }
 
   protected aoEscolher(evento: Event): void {
@@ -320,12 +375,20 @@ export class Documentos implements OnInit, OnDestroy {
     }
     this.enviando.set(true);
     this.erro.set(null);
+    this.aviso.set(null);
     const falhas: string[] = [];
+    const atualizados: string[] = [];
+    let novos = 0;
     for (const arquivo of arquivos) {
       try {
-        await new Promise<void>((resolver, rejeitar) => {
-          this.api.enviarDocumento(arquivo).subscribe({ next: () => resolver(), error: rejeitar });
+        const documento = await new Promise<Documento>((resolver, rejeitar) => {
+          this.api.enviarDocumento(arquivo).subscribe({ next: resolver, error: rejeitar });
         });
+        if (documento.versao > 1) {
+          atualizados.push(`${documento.nome} (versão ${documento.versao})`);
+        } else {
+          novos++;
+        }
       } catch (falha) {
         falhas.push(`${arquivo.name}: ${mensagemDeErro(falha)}`);
       }
@@ -334,6 +397,7 @@ export class Documentos implements OnInit, OnDestroy {
     if (falhas.length > 0) {
       this.erro.set(falhas.join(' '));
     }
+    this.aviso.set(resumoDoEnvio(novos, atualizados));
     this.carregar();
   }
 
@@ -346,4 +410,15 @@ export class Documentos implements OnInit, OnDestroy {
       error: (falha) => this.erro.set(mensagemDeErro(falha, 'Não foi possível carregar os documentos.')),
     });
   }
+}
+
+function resumoDoEnvio(novos: number, atualizados: string[]): string | null {
+  const partes: string[] = [];
+  if (novos > 0) {
+    partes.push(novos === 1 ? '1 documento novo na fila.' : `${novos} documentos novos na fila.`);
+  }
+  if (atualizados.length > 0) {
+    partes.push(`Atualizado: ${atualizados.join(', ')}. As respostas passam a usar a versão nova assim que o processamento terminar.`);
+  }
+  return partes.length > 0 ? partes.join(' ') : null;
 }

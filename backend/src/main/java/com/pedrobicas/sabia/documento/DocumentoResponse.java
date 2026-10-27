@@ -11,6 +11,7 @@ public record DocumentoResponse(
         StatusDocumento status,
         String erro,
         int totalTrechos,
+        int versao,
         Instant criadoEm,
         Instant atualizadoEm) {
 
@@ -23,6 +24,7 @@ public record DocumentoResponse(
                 documento.getStatus(),
                 documento.getErro(),
                 documento.getTotalTrechos(),
+                documento.getVersao(),
                 documento.getCriadoEm(),
                 documento.getAtualizadoEm());
     }
