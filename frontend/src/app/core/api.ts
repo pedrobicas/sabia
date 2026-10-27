@@ -12,6 +12,7 @@ import {
   PainelDeAnalises,
   Papel,
   RespostaDeLogin,
+  TrechoIndexado,
   Usuario,
 } from './modelos';
 
@@ -36,6 +37,10 @@ export class Api {
     return this.http.get<Usuario>('/api/auth/eu');
   }
 
+  trocarSenha(senhaAtual: string, novaSenha: string): Observable<void> {
+    return this.http.put<void>('/api/auth/senha', { senhaAtual, novaSenha });
+  }
+
   documentos(): Observable<Documento[]> {
     return this.http.get<Documento[]>('/api/documentos');
   }
@@ -52,6 +57,10 @@ export class Api {
 
   reprocessarDocumento(id: string): Observable<Documento> {
     return this.http.post<Documento>(`/api/documentos/${id}/reprocessar`, null);
+  }
+
+  trechosDoDocumento(id: string): Observable<TrechoIndexado[]> {
+    return this.http.get<TrechoIndexado[]>(`/api/documentos/${id}/trechos`);
   }
 
   baixarDocumento(id: string): Observable<Blob> {

@@ -25,7 +25,7 @@ import { Marca } from './marca';
       </nav>
 
       <div class="usuario">
-        <span class="nome-usuario">{{ sessao.usuario()?.nome }}</span>
+        <a routerLink="/conta" routerLinkActive="ativo" class="nome-usuario" title="Minha conta">{{ sessao.usuario()?.nome }}</a>
         <button type="button" class="botao-texto" (click)="sair()">Sair</button>
       </div>
     </header>
@@ -88,6 +88,14 @@ import { Marca } from './marca';
     }
     .nome-usuario {
       font-size: var(--t-pequeno);
+      color: var(--tinta);
+      text-decoration: none;
+      padding: 0.25rem 0.4rem;
+      border-radius: var(--raio);
+    }
+    .nome-usuario:hover,
+    .nome-usuario.ativo {
+      text-decoration: underline;
     }
     .conteudo {
       min-height: 0;
@@ -99,9 +107,14 @@ import { Marca } from './marca';
         gap: 0.5rem;
         padding: 0.5rem 0.75rem;
       }
-      .empresa,
-      .nome-usuario {
+      .empresa {
         display: none;
+      }
+      .nome-usuario {
+        max-width: 11rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
       nav {
         order: 3;

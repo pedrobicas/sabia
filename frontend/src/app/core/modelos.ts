@@ -35,8 +35,16 @@ export interface Documento {
   status: StatusDocumento;
   erro: string | null;
   totalTrechos: number;
+  /** Começa em 1 e sobe cada vez que um arquivo com o mesmo nome é reenviado. */
+  versao: number;
   criadoEm: string;
   atualizadoEm: string;
+}
+
+export interface TrechoIndexado {
+  ordem: number;
+  pagina: number | null;
+  texto: string;
 }
 
 export interface Membro {
