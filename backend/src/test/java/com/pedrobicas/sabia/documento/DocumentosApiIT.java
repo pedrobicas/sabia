@@ -106,6 +106,52 @@ class DocumentosApiIT {
                 .andExpect(jsonPath("$[?(@.id == '" + id + "')]").isEmpty());
     }
 
+    @Test
+    void reenviarComOMesmoNomeAtualizaODocumentoEmVezDeDuplicar() throws Exception {
+        String token = api.novaEmpresa("Cafeteria que atualiza");
+        String id = enviar(token, "horarios.md", "A loja abre às 7h.");
+        esperarStatusFinal(token, id);
+
+        String resposta = mvc.perform(multipart("/api/documentos")
+                .file(arquivo("horarios.md", "A loja abre às 8h a partir de novembro."))
+                .header("Authorization", bearer(token)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id))
+                .andExpect(jsonPath("$.versao").value(2))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(api.ler(resposta).get("status").asText()).isEqualTo("ENVIADO");
+
+        assertThat(esperarStatusFinal(token, id).get("status").asText()).isEqualTo("PRONTO");
+        mvc.perform(get("/api/documentos").header("Authorization", bearer(token)))
+                .andExpect(jsonPath("$.length()").value(1));
+        String trechos = mvc.perform(get("/api/documentos/" + id + "/trechos").header("Authorization", bearer(token)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        assertThat(trechos).contains("8h a partir de novembro").doesNotContain("abre às 7h");
+    }
+
+    @Test
+    void trechosVemNaOrdemDoDocumentoESoParaAMesmaEmpresa() throws Exception {
+        String tokenCafeteria = api.novaEmpresa("Cafeteria com trechos");
+        String tokenLivraria = api.novaEmpresa("Livraria curiosa");
+        String tokenMembro = api.novoMembro(tokenCafeteria);
+        String texto = "Primeira parte do manual. ".repeat(60) + "\n\n" + "Segunda parte do manual. ".repeat(60);
+        String id = enviar(tokenCafeteria, "manual-longo.txt", texto);
+        esperarStatusFinal(tokenCafeteria, id);
+
+        String corpo = mvc.perform(get("/api/documentos/" + id + "/trechos").header("Authorization", bearer(tokenMembro)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        JsonNode trechos = api.ler(corpo);
+        assertThat(trechos.size()).isGreaterThan(1);
+        assertThat(trechos.get(0).get("ordem").asInt()).isZero();
+        assertThat(trechos.get(0).get("texto").asText()).startsWith("Primeira parte");
+        assertThat(trechos.get(trechos.size() - 1).get("texto").asText()).contains("Segunda parte");
+
+        mvc.perform(get("/api/documentos/" + id + "/trechos").header("Authorization", bearer(tokenLivraria)))
+                .andExpect(status().isNotFound());
+    }
+
     private String enviar(String token, String nome, String conteudo) throws Exception {
         String resposta = mvc.perform(multipart("/api/documentos")
                 .file(arquivo(nome, conteudo))

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -102,6 +103,60 @@ class AuthApiIT {
         // Para a empresa B, o membro da empresa A simplesmente não existe.
         mvc.perform(delete("/api/usuarios/" + idMembroDeA).header("Authorization", "Bearer " + tokenEmpresaB))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void trocaDeSenhaPedeASenhaAtual() throws Exception {
+        String email = emailUnico();
+        String token = cadastrar("Empresa que troca a senha", email);
+
+        mvc.perform(put("/api/auth/senha")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsString(Map.of("senhaAtual", "chute-errado-1", "novaSenha", "nova-senha-456"))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("A senha atual não confere."));
+        mvc.perform(put("/api/auth/senha")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsString(Map.of("senhaAtual", "senha-forte-123", "novaSenha", "curta"))))
+                .andExpect(status().isBadRequest());
+
+        mvc.perform(put("/api/auth/senha")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsString(Map.of("senhaAtual", "senha-forte-123", "novaSenha", "nova-senha-456"))))
+                .andExpect(status().isNoContent());
+
+        entrar(email, "nova-senha-456");
+        mvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsString(Map.of("email", email, "senha", "senha-forte-123"))))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void muitasSenhasErradasBloqueiamOEmailPorUmTempo() throws Exception {
+        String email = emailUnico();
+        cadastrar("Empresa atacada", email);
+
+        for (int tentativa = 0; tentativa < 5; tentativa++) {
+            mvc.perform(post("/api/auth/login")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(json.writeValueAsString(Map.of("email", email, "senha", "chute-" + tentativa))))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        // Nem a senha certa entra enquanto o bloqueio durar.
+        mvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsString(Map.of("email", email, "senha", "senha-forte-123"))))
+                .andExpect(status().isTooManyRequests());
+
+        // Outras contas não são afetadas.
+        String outroEmail = emailUnico();
+        cadastrar("Outra empresa", outroEmail);
+        entrar(outroEmail, "senha-forte-123");
     }
 
     private String cadastrar(String empresa, String email) throws Exception {

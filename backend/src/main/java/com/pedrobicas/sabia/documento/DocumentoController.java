@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.pedrobicas.sabia.auth.UsuarioAtual;
+import com.pedrobicas.sabia.busca.TrechoIndexado;
 import com.pedrobicas.sabia.documento.DocumentoService.ArquivoBaixado;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -44,11 +45,20 @@ public class DocumentoController {
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Envia um documento (PDF, DOCX, TXT ou Markdown, até 10 MB). O processamento é assíncrono.")
-    public DocumentoResponse enviar(UsuarioAtual usuario, @RequestParam("arquivo") MultipartFile arquivo) {
-        return service.enviar(usuario, arquivo);
+    @Operation(summary = "Envia um documento (PDF, DOCX, TXT ou Markdown, até 10 MB). O processamento é assíncrono.",
+            description = "Devolve 201 para um documento novo. Se já existe um documento com o mesmo nome, "
+                    + "ele ganha uma versão nova e a resposta é 200.")
+    public ResponseEntity<DocumentoResponse> enviar(UsuarioAtual usuario,
+            @RequestParam("arquivo") MultipartFile arquivo) {
+        DocumentoResponse documento = service.enviar(usuario, arquivo);
+        return ResponseEntity.status(documento.versao() == 1 ? HttpStatus.CREATED : HttpStatus.OK).body(documento);
+    }
+
+    @GetMapping("/{id}/trechos")
+    @Operation(summary = "Trechos do documento como o assistente os vê, na ordem do arquivo")
+    public List<TrechoIndexado> trechos(UsuarioAtual usuario, @PathVariable UUID id) {
+        return service.trechos(usuario, id);
     }
 
     @DeleteMapping("/{id}")

@@ -15,5 +15,5 @@ public interface DocumentoRepository extends JpaRepository<Documento, UUID> {
 
     List<Documento> findAllByStatusIn(Collection<StatusDocumento> status);
 
-    boolean existsByEmpresaIdAndNome(UUID empresaId, String nome);
+    Optional<Documento> findFirstByEmpresaIdAndNomeOrderByCriadoEmDesc(UUID empresaId, String nome);
 }
