@@ -21,7 +21,7 @@ import { Sessao } from '../../core/sessao';
         }
 
         <div class="rolagem-tabela">
-          <table class="tabela">
+          <table class="tabela tabela-membros">
             <thead>
               <tr>
                 <th scope="col">Nome</th>
@@ -35,9 +35,9 @@ import { Sessao } from '../../core/sessao';
               @for (membro of membros(); track membro.id) {
                 <tr>
                   <td class="nome">{{ membro.nome }}</td>
-                  <td>{{ membro.email }}</td>
-                  <td>{{ membro.papel === 'ADMIN' ? 'Administrador' : 'Membro' }}</td>
-                  <td>{{ desde(membro) }}</td>
+                  <td class="email" data-rotulo="E-mail">{{ membro.email }}</td>
+                  <td data-rotulo="Papel">{{ membro.papel === 'ADMIN' ? 'Administrador' : 'Membro' }}</td>
+                  <td data-rotulo="Desde">{{ desde(membro) }}</td>
                   <td class="acoes">
                     @if (membro.id !== sessao.usuario()?.id) {
                       <button type="button" class="botao-texto perigo" (click)="remover(membro)">Remover</button>
@@ -120,6 +120,47 @@ import { Sessao } from '../../core/sessao';
     .voce {
       color: var(--tinta-suave);
       font-size: var(--t-pequeno);
+    }
+    @media (max-width: 640px) {
+      .tabela-membros thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+      }
+      .tabela-membros,
+      .tabela-membros tbody,
+      .tabela-membros td {
+        display: block;
+      }
+      .tabela-membros tr {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.35rem 1rem;
+        padding: 0.9rem 0;
+        border-bottom: 1px solid var(--linha);
+      }
+      .tabela-membros td {
+        padding: 0;
+        border: 0;
+      }
+      .tabela-membros td[data-rotulo]::before {
+        content: attr(data-rotulo);
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--tinta-suave);
+      }
+      .tabela-membros .nome,
+      .tabela-membros .email {
+        grid-column: 1 / -1;
+        overflow-wrap: anywhere;
+      }
+      .tabela-membros .acoes {
+        text-align: left;
+        margin-left: -0.4rem;
+      }
     }
     .novo {
       padding: 1.25rem;

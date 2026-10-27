@@ -93,7 +93,7 @@ interface Pedaco {
       grid-template-rows: auto auto auto 1fr;
       background: var(--superficie);
       border-left: 1px solid var(--linha);
-      box-shadow: -12px 0 32px rgba(30, 35, 24, 0.14);
+      box-shadow: -12px 0 32px var(--sombra);
     }
     header {
       display: flex;

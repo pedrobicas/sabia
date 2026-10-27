@@ -47,6 +47,7 @@ import { Component } from '@angular/core';
       padding: 0 0.35rem;
       border-radius: 3px;
       background: var(--marca-texto);
+      color: var(--sobre-marca);
       font-family: var(--fonte-interface);
       font-size: 0.7rem;
       font-weight: 700;
@@ -73,7 +74,7 @@ import { Component } from '@angular/core';
       place-items: center;
       border-radius: 3px;
       background: var(--marca-texto);
-      color: var(--tinta);
+      color: var(--sobre-marca);
       font-weight: 700;
     }
     .trecho {

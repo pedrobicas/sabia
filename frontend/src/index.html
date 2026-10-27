@@ -6,7 +6,16 @@
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Assistente que responde perguntas usando os documentos da sua empresa, sempre citando a fonte.">
-  <meta name="theme-color" content="#3d5a2a">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f4f5f0" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#141812" media="(prefers-color-scheme: dark)">
+  <script>
+    // Aplica o tema escolhido antes do Angular carregar, para a tela não piscar.
+    try {
+      var tema = localStorage.getItem('sabia.tema');
+      if (tema === 'claro' || tema === 'escuro') document.documentElement.setAttribute('data-tema', tema);
+    } catch (e) {}
+  </script>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
 </head>
 <body>

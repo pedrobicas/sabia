@@ -90,6 +90,23 @@
   }
 }
 
+.filtro input {
+  width: 100%;
+  font: inherit;
+  font-size: var(--t-pequeno);
+  color: var(--tinta);
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  padding: 0.45rem 0.6rem;
+
+  &:focus {
+    outline: none;
+    border-color: var(--musgo);
+    box-shadow: var(--foco);
+  }
+}
+
 .vazio-lista {
   margin: 0.5rem 0.25rem;
   color: var(--tinta-suave);
@@ -104,11 +121,71 @@
   height: 100%;
 }
 
-.alternar-lista {
+.topo-fio {
   grid-row: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  min-width: 0;
+  padding: 0.55rem clamp(1rem, 5vw, 4rem);
+  border-bottom: 1px solid var(--linha);
+
+  &.vazio {
+    display: none;
+  }
+}
+
+.titulo-conversa {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--t-medio);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.acoes-conversa {
+  display: flex;
+  gap: 0.15rem;
+  flex: none;
+
+  button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    text-decoration: none;
+  }
+}
+
+.renomear {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+
+  input {
+    flex: 1;
+    min-width: 0;
+    font: inherit;
+    font-family: var(--fonte-leitura);
+    font-size: var(--t-medio);
+    font-weight: 600;
+    color: var(--tinta);
+    background: var(--superficie);
+    border: 1px solid var(--musgo);
+    border-radius: var(--raio);
+    padding: 0.25rem 0.5rem;
+
+    &:focus {
+      outline: none;
+      box-shadow: var(--foco);
+    }
+  }
+}
+
+.alternar-lista {
   display: none;
-  justify-self: start;
-  margin: 0.5rem 1rem 0;
+  flex: none;
 }
 
 .mensagens {
@@ -141,6 +218,35 @@
 .aviso {
   color: var(--tinta-suave);
   font-style: italic;
+}
+
+.rodape-resposta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  max-width: 68ch;
+
+  app-avaliacao-resposta {
+    margin-top: 0.6rem;
+  }
+
+  .copiar {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: 0.6rem;
+    margin-left: auto;
+
+    svg {
+      width: 0.95rem;
+      height: 0.95rem;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.5;
+    }
+  }
 }
 
 .boas-vindas {
@@ -220,6 +326,12 @@
     color: var(--tinta-suave);
     font-size: 0.75rem;
   }
+
+  .parar svg {
+    width: 0.8rem;
+    height: 0.8rem;
+    fill: currentColor;
+  }
 }
 
 /* Painel da fonte */
@@ -276,6 +388,7 @@
     height: 1.75rem;
     border-radius: 4px;
     background: var(--marca-texto);
+    color: var(--sobre-marca);
     font-weight: 700;
   }
 
@@ -302,7 +415,7 @@
     max-height: 60dvh;
     border-left: 0;
     border-top: 1px solid var(--linha-forte);
-    box-shadow: 0 -8px 24px rgba(30, 35, 24, 0.12);
+    box-shadow: 0 -8px 24px var(--sombra);
     z-index: 10;
     animation-name: subir;
   }
@@ -321,10 +434,14 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .layout {
+    position: relative;
+  }
+
   .conversas {
     display: none;
-    position: fixed;
-    inset: 7.5rem 0 0 0;
+    position: absolute;
+    inset: 2.9rem 0 0 0;
     z-index: 5;
     background: var(--papel);
     border-right: 0;
@@ -336,6 +453,24 @@
 
   .alternar-lista {
     display: inline-block;
+  }
+
+  .topo-fio,
+  .topo-fio.vazio {
+    display: flex;
+    height: 2.9rem;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  /* No celular o título já aparece na lista de conversas; o espaço fica para as ações. */
+  .titulo-conversa {
+    visibility: hidden;
+  }
+
+  .acoes-conversa .botao-texto {
+    padding-left: 0.3rem;
+    padding-right: 0.3rem;
   }
 
   .mensagens {

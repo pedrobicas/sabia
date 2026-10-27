@@ -505,7 +505,7 @@ const DIA_LONGO = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', day: 'num
       border-radius: var(--raio);
       font-size: var(--t-pequeno);
       pointer-events: none;
-      box-shadow: 0 6px 18px rgba(30, 35, 24, 0.18);
+      box-shadow: 0 6px 18px var(--sombra);
     }
     .dica-grafico.meio {
       transform: translateX(-50%);
