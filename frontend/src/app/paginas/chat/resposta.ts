@@ -98,6 +98,12 @@ import { Citacao } from '../../core/modelos';
       font-weight: 650;
       margin-top: 1rem;
     }
+    p.nota {
+      font-family: var(--fonte-interface);
+      font-size: var(--t-pequeno);
+      font-style: italic;
+      color: var(--tinta-suave);
+    }
     .marcador {
       display: inline-block;
       margin: 0 0 0 0.12rem;
@@ -105,7 +111,7 @@ import { Citacao } from '../../core/modelos';
       border: 0;
       border-radius: 3px;
       background: var(--marca-texto);
-      color: var(--tinta);
+      color: var(--sobre-marca);
       font-family: var(--fonte-interface);
       font-size: 0.7rem;
       font-weight: 700;
@@ -115,7 +121,7 @@ import { Citacao } from '../../core/modelos';
     }
     button.marcador:hover {
       background: var(--tinta);
-      color: var(--marca-texto);
+      color: var(--papel);
     }
     .marcador.inativo {
       background: var(--linha);
@@ -179,6 +185,7 @@ import { Citacao } from '../../core/modelos';
       height: 1.2rem;
       border-radius: 3px;
       background: var(--marca-texto);
+      color: var(--sobre-marca);
       font-weight: 700;
       font-size: 0.7rem;
     }

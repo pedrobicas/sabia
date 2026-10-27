@@ -10,9 +10,12 @@ export type Parte =
   | { tipo: 'citacao'; numero: number };
 
 export interface Bloco {
-  tipo: 'paragrafo' | 'item' | 'titulo';
+  tipo: 'paragrafo' | 'item' | 'titulo' | 'nota';
   partes: Parte[];
 }
+
+/** Aviso que o servidor acrescenta quando a resposta é interrompida; aparece como nota discreta. */
+export const RESPOSTA_INTERROMPIDA = '(Resposta interrompida antes do fim.)';
 
 const ITEM = /^\s*(?:[-*•]|\d+[.)])\s+/;
 const TITULO = /^\s*#{1,6}\s+/;
@@ -23,7 +26,8 @@ export function formatarResposta(texto: string): Bloco[] {
 
   const fecharParagrafo = () => {
     if (paragrafo.length > 0) {
-      blocos.push({ tipo: 'paragrafo', partes: partesDaLinha(paragrafo.join(' ')) });
+      const texto = paragrafo.join(' ');
+      blocos.push({ tipo: texto === RESPOSTA_INTERROMPIDA ? 'nota' : 'paragrafo', partes: partesDaLinha(texto) });
       paragrafo = [];
     }
   };

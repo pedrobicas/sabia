@@ -76,7 +76,7 @@ const ROTULO_DO_TIPO: Record<Documento['tipo'], string> = {
         </div>
       } @else if (documentos().length > 0) {
         <div class="rolagem-tabela">
-          <table class="tabela">
+          <table class="tabela tabela-documentos">
             <thead>
               <tr>
                 <th scope="col">Nome</th>
@@ -100,13 +100,13 @@ const ROTULO_DO_TIPO: Record<Documento['tipo'], string> = {
                       <span class="erro-documento">{{ documento.erro }}</span>
                     }
                   </td>
-                  <td>{{ tipo(documento) }}</td>
-                  <td class="numero">{{ tamanhoDe(documento) }}</td>
-                  <td>
+                  <td data-rotulo="Tipo">{{ tipo(documento) }}</td>
+                  <td class="numero" data-rotulo="Tamanho">{{ tamanhoDe(documento) }}</td>
+                  <td data-rotulo="Situação">
                     <span class="status" [attr.data-status]="documento.status">{{ rotulo(documento.status) }}</span>
                   </td>
-                  <td class="numero">{{ documento.status === 'PRONTO' ? documento.totalTrechos : '' }}</td>
-                  <td class="numero">{{ dataDe(documento) }}</td>
+                  <td class="numero" data-rotulo="Trechos">{{ documento.status === 'PRONTO' ? documento.totalTrechos : '–' }}</td>
+                  <td class="numero" data-rotulo="Enviado em">{{ dataDe(documento) }}</td>
                   <td class="acoes">
                     @if (documento.status === 'PRONTO') {
                       <button type="button" class="botao-texto" (click)="abrirTrechos(documento, $event)">Ver trechos</button>
@@ -265,6 +265,50 @@ const ROTULO_DO_TIPO: Record<Documento['tipo'], string> = {
       opacity: 0.4;
       cursor: not-allowed;
       text-decoration: none;
+    }
+    /* No celular, cada documento vira um cartão em vez de uma linha larga demais. */
+    @media (max-width: 640px) {
+      .tabela-documentos thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+      }
+      .tabela-documentos,
+      .tabela-documentos tbody,
+      .tabela-documentos tr,
+      .tabela-documentos td {
+        display: block;
+      }
+      .tabela-documentos tr {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.35rem 1rem;
+        padding: 0.9rem 0;
+        border-bottom: 1px solid var(--linha);
+      }
+      .tabela-documentos td {
+        padding: 0;
+        border: 0;
+      }
+      .tabela-documentos td[data-rotulo]::before {
+        content: attr(data-rotulo);
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--tinta-suave);
+      }
+      .tabela-documentos .nome,
+      .tabela-documentos .acoes {
+        grid-column: 1 / -1;
+        min-width: 0;
+      }
+      .tabela-documentos .acoes {
+        text-align: left;
+        white-space: normal;
+        margin-left: -0.4rem;
+      }
     }
   `,
 })
