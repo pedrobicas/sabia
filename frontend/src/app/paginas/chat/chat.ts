@@ -21,7 +21,7 @@ import { conversaEmMarkdown, nomeDeArquivo, respostaParaCopiar } from '../../cor
 import { RESPOSTA_INTERROMPIDA } from '../../core/formatar-resposta';
 import { Avaliacao, Citacao, Conversa, Mensagem } from '../../core/modelos';
 import { Sessao } from '../../core/sessao';
-import { normalizar } from '../documentos/painel-de-trechos';
+import { normalizar } from '../../core/texto';
 import { AvaliacaoResposta } from './avaliacao-resposta';
 import { PerguntasPendentes } from './perguntas-pendentes';
 import { Resposta } from './resposta';

@@ -3,6 +3,7 @@ import { Component, computed, ElementRef, inject, input, OnInit, output, signal,
 import { Api } from '../../core/api';
 import { mensagemDeErro } from '../../core/autenticacao';
 import { Documento, TrechoIndexado } from '../../core/modelos';
+import { normalizar } from '../../core/texto';
 
 interface Pedaco {
   texto: string;
@@ -236,9 +237,4 @@ export class PainelDeTrechos implements OnInit {
     }
     return pedacos;
   }
-}
-
-/** Minúsculas e sem acentos, caractere por caractere (o tamanho do texto não muda). */
-export function normalizar(texto: string): string {
-  return Array.from(texto, (letra) => letra.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase() || letra).join('');
 }

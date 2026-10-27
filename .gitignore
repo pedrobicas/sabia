@@ -15,6 +15,7 @@ hs_err_pid*
 frontend/node_modules/
 frontend/dist/
 frontend/.angular/
+frontend/out-tsc/
 
 # Resultado do build copiado para dentro do back-end
 backend/src/main/resources/static/
