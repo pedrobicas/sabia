@@ -132,7 +132,9 @@ O caminho gratuito usado aqui tem três peças, e todas têm plano sem cartão d
 
 1. **Banco:** um projeto no [Neon](https://neon.com) (PostgreSQL com pgvector). A migração do Flyway liga a extensão `vector` sozinha. Copie a conexão no formato JDBC: `jdbc:postgresql://HOST/BANCO?sslmode=require`, com usuário e senha à parte.
 2. **Modelo de IA:** uma chave do [Google AI Studio](https://aistudio.google.com) para o Gemini, que o Sabiá usa pela API compatível com a da OpenAI.
-3. **Aplicação:** na [Render](https://render.com), **New > Blueprint**, aponte para este repositório e preencha o que o `render.yaml` pede: banco, chave da IA e o modelo de chat (um Flash do Gemini).
+3. **Aplicação:** clique no botão abaixo (ou, na [Render](https://render.com), **New > Blueprint** apontando para este repositório) e preencha o que o `render.yaml` pede: banco, chave da IA e o modelo de chat (um Flash do Gemini).
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/pedrobicas/sabia)
 
 O plano gratuito da Render dorme depois de 15 minutos sem acesso, então o primeiro acesso depois disso demora cerca de um minuto. Confira se o processamento dos documentos terminou na tela Documentos antes de divulgar o link.
 
