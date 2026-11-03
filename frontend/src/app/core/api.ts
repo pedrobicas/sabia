@@ -29,6 +29,10 @@ export class Api {
     return this.http.post<RespostaDeLogin>('/api/auth/login', { email, senha });
   }
 
+  entrarNaDemonstracao(empresa: string): Observable<RespostaDeLogin> {
+    return this.http.post<RespostaDeLogin>('/api/auth/demo', { empresa });
+  }
+
   cadastrar(dados: { nomeEmpresa: string; nome: string; email: string; senha: string }): Observable<RespostaDeLogin> {
     return this.http.post<RespostaDeLogin>('/api/auth/cadastro', dados);
   }

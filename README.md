@@ -4,7 +4,7 @@ Assistente de base de conhecimento para empresas. Você envia os documentos da e
 
 ![Conversa com respostas citadas e o painel mostrando o trecho de origem](docs/imagens/conversa.png)
 
-<!-- Depois do deploy, adicione aqui: **Demonstração online:** https://seu-endereco -->
+<!-- Depois do deploy, troque esta linha por: **Demonstração online:** https://seu-endereco (o primeiro acesso pode levar cerca de um minuto, porque o servidor gratuito dorme quando ninguém usa) -->
 
 ## O que ele faz
 
@@ -15,6 +15,7 @@ Assistente de base de conhecimento para empresas. Você envia os documentos da e
 - **Responde em tempo real.** O texto aparece enquanto é gerado (Server-Sent Events), e dá para parar no meio.
 - **Acha nomes e códigos.** A busca combina vetores (sentido) com palavras-chave (termos exatos como "SKU-4471"), e perguntas de continuação ("E aos domingos?") usam o contexto da anterior.
 - **Mostra o que falta documentar.** Cada resposta pode ser avaliada, e o painel de análises lista as perguntas que ficaram sem resposta, as respostas mal avaliadas e os documentos mais usados.
+- **Tem uma demonstração aberta.** Qualquer pessoa entra numa empresa fictícia com uma conta temporária só dela, sem cadastro.
 - **Mantém os documentos em dia.** Reenviar um arquivo com o mesmo nome cria uma versão nova em vez de duplicar, e dá para ver os trechos exatamente como o assistente os lê.
 
 | Análises | Documentos |
@@ -60,6 +61,7 @@ flowchart LR
 - **Um serviço só para deploy.** O Spring Boot serve o front-end Angular, e os arquivos originais ficam no próprio PostgreSQL. Para subir, basta a aplicação e um banco com pgvector.
 - **Busca híbrida sem infraestrutura nova.** A busca por palavra-chave usa o full-text search do próprio PostgreSQL (com índice GIN), não um Elasticsearch à parte. A fusão por posição (RRF) dispensa calibrar notas de escalas diferentes.
 - **Custo sob controle.** Perguntas sem trecho relevante não chamam o modelo, há um limite de perguntas por hora por usuário, e parar uma resposta cancela a geração no servidor (a parte já escrita fica salva).
+- **Demonstração pública sem conta compartilhada.** O botão "Entrar como..." cria um usuário temporário, sem senha, só daquele visitante. Assim ninguém vê as conversas de outro visitante nem troca a senha de todo mundo. As sugestões da tela inicial são fixas, para ninguém ver o que outro digitou, e o usuário é apagado (com as conversas) por uma tarefa agendada depois que o token vence. Há um teto de perguntas por hora somando todos os visitantes e um limite de contas novas por IP.
 - **Login protegido.** Depois de 5 senhas erradas para o mesmo e-mail (ou 30 do mesmo IP) em 15 minutos, o login responde 429 até a janela passar.
 - **Acessível.** Contraste conferido nos temas claro e escuro, navegação por teclado (atalhos `/` e `Esc`, foco que volta para onde estava), anúncios curtos para leitores de tela em vez de ler cada palavra que chega, e gráfico com versão em tabela.
 - **Qualidade medida.** A pasta [`avaliacao`](avaliacao) tem um gabarito de 24 perguntas e um script que mede acerto, citação correta, recusa e resistência a injeção.
@@ -116,11 +118,23 @@ Todas as variáveis têm um valor padrão para rodar localmente. A lista complet
 | `IA_BASE_URL`, `IA_API_KEY` | Provedor de IA compatível com a API da OpenAI |
 | `IA_MODELO_CHAT`, `IA_MODELO_EMBEDDING` | Modelos de resposta e de vetores |
 | `EMBEDDING_DIMENSIONS` | Dimensão dos vetores do modelo de embedding |
+| `IA_EMBEDDING_DIMENSOES_PEDIDAS` | Tamanho de vetor pedido ao provedor (necessário em modelos com mais de 2000 dimensões, como o `gemini-embedding-001`) |
 | `DEMO_HABILITADA` | Cria as empresas fictícias de demonstração |
+| `DEMO_LIMITE_PERGUNTAS_POR_HORA`, `DEMO_VISITANTES_POR_IP_POR_HORA` | Freios da demonstração pública (0 desliga) |
 | `CADASTRO_ABERTO` | Permite cadastrar novas empresas |
 | `LIMITE_PERGUNTAS_POR_HORA` | Limite por usuário (0 desliga) |
 | `LOGIN_TENTATIVAS_POR_EMAIL`, `LOGIN_TENTATIVAS_POR_IP`, `LOGIN_JANELA_MINUTOS` | Freio contra tentativas de adivinhar senha |
 | `FUSO_HORARIO` | Fuso usado para agrupar as perguntas por dia no painel |
+
+## Publicando a demonstração
+
+O caminho gratuito usado aqui tem três peças, e todas têm plano sem cartão de crédito:
+
+1. **Banco:** um projeto no [Neon](https://neon.com) (PostgreSQL com pgvector). A migração do Flyway liga a extensão `vector` sozinha. Copie a conexão no formato JDBC: `jdbc:postgresql://HOST/BANCO?sslmode=require`, com usuário e senha à parte.
+2. **Modelo de IA:** uma chave do [Google AI Studio](https://aistudio.google.com) para o Gemini, que o Sabiá usa pela API compatível com a da OpenAI.
+3. **Aplicação:** na [Render](https://render.com), **New > Blueprint**, aponte para este repositório e preencha o que o `render.yaml` pede: banco, chave da IA e o modelo de chat (um Flash do Gemini).
+
+O plano gratuito da Render dorme depois de 15 minutos sem acesso, então o primeiro acesso depois disso demora cerca de um minuto. Confira se o processamento dos documentos terminou na tela Documentos antes de divulgar o link.
 
 ## Testes
 
@@ -143,6 +157,7 @@ Com a aplicação rodando, a documentação interativa fica em http://localhost:
 | --- | --- |
 | `POST /api/auth/cadastro` | Cria uma empresa e o primeiro administrador |
 | `POST /api/auth/login` | Devolve o token JWT (429 depois de muitas senhas erradas) |
+| `POST /api/auth/demo` | Entra numa empresa de demonstração com uma conta temporária |
 | `PUT /api/auth/senha` | Troca a senha, pedindo a atual |
 | `GET /api/documentos`, `POST /api/documentos` | Lista e envia documentos (mesmo nome = nova versão) |
 | `GET /api/documentos/{id}/trechos` | Trechos do documento como o assistente os vê |

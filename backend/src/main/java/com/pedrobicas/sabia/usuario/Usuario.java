@@ -39,6 +39,10 @@ public class Usuario {
     @Column(name = "criado_em", nullable = false)
     private Instant criadoEm;
 
+    /** Preenchido só para visitantes da demonstração: depois desse instante, o usuário é apagado. */
+    @Column(name = "visitante_ate")
+    private Instant visitanteAte;
+
     protected Usuario() {
     }
 
@@ -49,6 +53,13 @@ public class Usuario {
         this.senhaHash = senhaHash;
         this.papel = papel;
         this.criadoEm = Instant.now();
+    }
+
+    /** Usuário temporário da demonstração pública: membro comum, sem senha conhecida, com data para ser apagado. */
+    public static Usuario visitante(UUID empresaId, String email, String senhaHash, Instant ate) {
+        Usuario visitante = new Usuario(empresaId, "Visitante", email, senhaHash, Papel.MEMBRO);
+        visitante.visitanteAte = ate;
+        return visitante;
     }
 
     public void trocarSenha(String novoHash) {
@@ -81,5 +92,13 @@ public class Usuario {
 
     public Instant getCriadoEm() {
         return criadoEm;
+    }
+
+    public Instant getVisitanteAte() {
+        return visitanteAte;
+    }
+
+    public boolean isVisitante() {
+        return visitanteAte != null;
     }
 }

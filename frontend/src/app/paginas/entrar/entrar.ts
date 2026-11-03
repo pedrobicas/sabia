@@ -1,10 +1,11 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { Observable } from 'rxjs';
 
 import { Api } from '../../core/api';
 import { mensagemDeErro } from '../../core/autenticacao';
-import { ContaDemo } from '../../core/modelos';
+import { ContaDemo, RespostaDeLogin } from '../../core/modelos';
 import { Sessao } from '../../core/sessao';
 import { Marca } from '../shell/marca';
 import { ExemploResposta } from './exemplo-resposta';
@@ -50,9 +51,12 @@ import { ExemploResposta } from './exemplo-resposta';
         @if (contasDemo().length > 0) {
           <div class="demo">
             <h3>Experimente com uma empresa de exemplo</h3>
-            <p>As duas empresas fictícias têm documentos prontos. Uma não enxerga os documentos da outra.</p>
+            <p>
+              As duas empresas fictícias têm documentos prontos, e uma não enxerga os da outra. Você entra com uma
+              conta temporária só sua, sem cadastro.
+            </p>
             <ul>
-              @for (conta of contasDemo(); track conta.email) {
+              @for (conta of contasDemo(); track conta.empresa) {
                 <li>
                   <button type="button" class="botao-secundario" [disabled]="enviando()" (click)="entrarComo(conta)">
                     Entrar como {{ conta.empresa }}
@@ -198,18 +202,18 @@ export class Entrar implements OnInit {
       return;
     }
     const { email, senha } = this.formulario.getRawValue();
-    this.enviarLogin(email, senha);
+    this.enviarLogin(this.api.entrar(email, senha));
   }
 
+  /** Cada clique cria uma conta temporária só deste visitante, sem senha. */
   entrarComo(conta: ContaDemo): void {
-    this.formulario.setValue({ email: conta.email, senha: conta.senha });
-    this.enviarLogin(conta.email, conta.senha);
+    this.enviarLogin(this.api.entrarNaDemonstracao(conta.empresa));
   }
 
-  private enviarLogin(email: string, senha: string): void {
+  private enviarLogin(login: Observable<RespostaDeLogin>): void {
     this.enviando.set(true);
     this.erro.set(null);
-    this.api.entrar(email, senha).subscribe({
+    login.subscribe({
       next: (resposta) => {
         this.sessao.iniciar(resposta);
         this.router.navigate(['/chat']);

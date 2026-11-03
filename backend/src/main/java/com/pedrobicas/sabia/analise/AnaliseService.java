@@ -128,10 +128,16 @@ public class AnaliseService {
 
     /**
      * Sugestões para a tela de conversa: as perguntas respondidas que a empresa mais faz.
-     * Sem histórico ainda, usa as sugestões da empresa de demonstração (quando for o caso).
+     * Nas empresas de demonstração, são sempre as sugestões fixas, para um visitante não ver o que outro digitou.
      */
     @Transactional(readOnly = true)
     public List<String> sugestoes(UUID empresaId, int quantidade) {
+        List<String> daDemonstracao = empresas.findById(empresaId)
+                .map(empresa -> demonstracao.sugestoesPara(empresa.getNome()))
+                .orElse(List.of());
+        if (!daDemonstracao.isEmpty()) {
+            return daDemonstracao;
+        }
         Timestamp desde = Timestamp.from(Instant.now(relogio).minusSeconds(60L * 60 * 24 * 60));
         List<String> frequentes = jdbc.query("""
                 SELECT min(m.pergunta) AS pergunta
@@ -141,12 +147,7 @@ public class AnaliseService {
                 ORDER BY count(*) DESC, max(m.criado_em) DESC
                 LIMIT ?
                 """, (linha, numero) -> linha.getString("pergunta"), empresaId, desde, quantidade);
-        if (!frequentes.isEmpty()) {
-            return frequentes;
-        }
-        return empresas.findById(empresaId)
-                .map(empresa -> demonstracao.sugestoesPara(empresa.getNome()))
-                .orElse(List.of());
+        return frequentes;
     }
 
     private static long numero(Object valor) {

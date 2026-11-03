@@ -53,7 +53,8 @@ public class SegurancaConfig {
                 .authorizeHttpRequests(regras -> regras
                         // Respostas em streaming (SSE) terminam num "async dispatch" que já foi autorizado.
                         .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/cadastro").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/cadastro", "/api/auth/demo")
+                        .permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/config").permitAll()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll())

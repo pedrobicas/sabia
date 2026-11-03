@@ -28,16 +28,18 @@ public class TokenService {
 
     public String gerar(Usuario usuario) {
         Instant agora = Instant.now();
-        JwtClaimsSet claims = JwtClaimsSet.builder()
+        JwtClaimsSet.Builder claims = JwtClaimsSet.builder()
                 .issuer("sabia")
                 .issuedAt(agora)
                 .expiresAt(agora.plus(propriedades.jwt().validade()))
                 .subject(usuario.getId().toString())
                 .claim(UsuarioAtual.CLAIM_EMPRESA, usuario.getEmpresaId().toString())
                 .claim(UsuarioAtual.CLAIM_PAPEL, usuario.getPapel().name())
-                .claim(UsuarioAtual.CLAIM_NOME, usuario.getNome())
-                .build();
+                .claim(UsuarioAtual.CLAIM_NOME, usuario.getNome());
+        if (usuario.isVisitante()) {
+            claims.claim(UsuarioAtual.CLAIM_VISITANTE, true);
+        }
         JwsHeader cabecalho = JwsHeader.with(MacAlgorithm.HS256).build();
-        return encoder.encode(JwtEncoderParameters.from(cabecalho, claims)).getTokenValue();
+        return encoder.encode(JwtEncoderParameters.from(cabecalho, claims.build())).getTokenValue();
     }
 }

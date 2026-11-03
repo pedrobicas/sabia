@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,11 +27,11 @@ import com.pedrobicas.sabia.usuario.Usuario;
 import com.pedrobicas.sabia.usuario.UsuarioRepository;
 
 /**
- * Com DEMO_HABILITADA=true, cria duas empresas fictícias com documentos prontos
- * (em src/main/resources/demo) e um usuário de demonstração para cada uma.
+ * Com DEMO_HABILITADA=true, cria duas empresas fictícias com documentos prontos (em src/main/resources/demo).
  *
- * <p>Os usuários de demonstração são MEMBROS: conseguem conversar e consultar documentos,
- * mas não conseguem apagar nada. A carga só acontece uma vez (se o usuário já existe, pula).
+ * <p>Cada empresa ganha um usuário "dono dos documentos", com senha aleatória que ninguém conhece: ele só existe
+ * para registrar quem enviou os arquivos. Quem visita a demonstração entra por {@link VisitantesDaDemonstracao},
+ * com uma conta temporária só dele. A carga acontece uma vez (se o dono já existe, pula).
  */
 @Component
 public class CargaDeDemonstracao {
@@ -80,17 +82,30 @@ public class CargaDeDemonstracao {
         }
     }
 
-    /** Contas mostradas na tela de entrada quando a demonstração está ligada. */
+    /** Empresas mostradas na tela de entrada quando a demonstração está ligada. */
     public List<ContaDemo> contas() {
         if (!propriedades.demo().habilitada()) {
             return List.of();
         }
-        return EMPRESAS.stream()
-                .map(demo -> new ContaDemo(demo.nome(), demo.email(), propriedades.demo().senha()))
-                .toList();
+        return EMPRESAS.stream().map(demo -> new ContaDemo(demo.nome())).toList();
     }
 
-    /** Sugestões de pergunta para uma empresa de demonstração, enquanto ela ainda não tem histórico. */
+    /** ID da empresa de demonstração com esse nome, se a demonstração está ligada e a empresa já foi criada. */
+    public Optional<UUID> empresaPorNome(String nomeDaEmpresa) {
+        if (!propriedades.demo().habilitada() || nomeDaEmpresa == null) {
+            return Optional.empty();
+        }
+        return EMPRESAS.stream()
+                .filter(demo -> demo.nome().equals(nomeDaEmpresa.strip()))
+                .findFirst()
+                .flatMap(demo -> usuarios.findByEmail(demo.email()))
+                .map(Usuario::getEmpresaId);
+    }
+
+    /**
+     * Sugestões fixas de pergunta para uma empresa de demonstração. São sempre estas, e não as perguntas mais
+     * feitas, para um visitante não ver na tela inicial o que outro visitante digitou.
+     */
     public List<String> sugestoesPara(String nomeDaEmpresa) {
         if (!propriedades.demo().habilitada()) {
             return List.of();
@@ -104,14 +119,14 @@ public class CargaDeDemonstracao {
 
     private void criar(EmpresaDemo demo) throws IOException {
         Empresa empresa = empresas.save(new Empresa(demo.nome()));
-        Usuario usuario = usuarios.save(new Usuario(empresa.getId(), "Visitante da demonstração", demo.email(),
-                senhas.encode(propriedades.demo().senha()), Papel.MEMBRO));
+        Usuario dono = usuarios.save(new Usuario(empresa.getId(), "Documentos da demonstração", demo.email(),
+                senhas.encode(UUID.randomUUID().toString()), Papel.MEMBRO));
 
         Resource[] arquivos = new PathMatchingResourcePatternResolver()
                 .getResources("classpath:demo/" + demo.pasta() + "/*");
         Arrays.sort(arquivos, Comparator.comparing(Resource::getFilename));
         for (Resource arquivo : arquivos) {
-            documentos.registrar(empresa.getId(), usuario.getId(), arquivo.getFilename(), arquivo.getContentAsByteArray());
+            documentos.registrar(empresa.getId(), dono.getId(), arquivo.getFilename(), arquivo.getContentAsByteArray());
         }
         log.info("Empresa de demonstração {} criada com {} documento(s)", demo.nome(), arquivos.length);
     }
