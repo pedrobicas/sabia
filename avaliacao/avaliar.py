@@ -49,8 +49,9 @@ def requisicao(url: str, corpo: dict | None = None, token: str | None = None, ac
     return urllib.request.urlopen(urllib.request.Request(url, data=dados, headers=cabecalhos, method="POST"), timeout=180)
 
 
-def entrar(base: str, email: str, senha: str) -> str:
-    with requisicao(f"{base}/api/auth/login", {"email": email, "senha": senha}) as resposta:
+def entrar(base: str, empresa: str) -> str:
+    """Entra na empresa de demonstração com uma conta temporária (a mesma rota do botão da tela de entrada)."""
+    with requisicao(f"{base}/api/auth/demo", {"empresa": empresa}) as resposta:
         return json.load(resposta)["token"]
 
 
@@ -110,8 +111,7 @@ def percentual(parte: int, total: int) -> str:
 def main() -> int:
     argumentos = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     argumentos.add_argument("--url", default="http://localhost:8080")
-    argumentos.add_argument("--email", default="demo@cafeaurora.com")
-    argumentos.add_argument("--senha", default="demo1234")
+    argumentos.add_argument("--empresa", default="Café Aurora", help="Empresa de demonstração usada nas perguntas")
     argumentos.add_argument("--gabarito", default=str(PASTA / "gabarito.json"))
     argumentos.add_argument("--saida", default=str(PASTA / "resultados.md"))
     argumentos.add_argument("--rotulo", default="", help="Descrição da configuração testada (modelos, tamanho do trecho...)")
@@ -119,7 +119,7 @@ def main() -> int:
 
     gabarito = json.loads(Path(opcoes.gabarito).read_text(encoding="utf-8"))["perguntas"]
     try:
-        token = entrar(opcoes.url, opcoes.email, opcoes.senha)
+        token = entrar(opcoes.url, opcoes.empresa)
     except urllib.error.URLError as erro:
         print(f"Não foi possível entrar em {opcoes.url}: {erro}", file=sys.stderr)
         return 1

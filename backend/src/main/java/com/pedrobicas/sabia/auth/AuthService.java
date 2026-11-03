@@ -76,6 +76,9 @@ public class AuthService {
     public void trocarSenha(UsuarioAtual atual, TrocaDeSenhaRequest pedido, String ip) {
         Usuario usuario = usuarios.findByIdAndEmpresaId(atual.id(), atual.empresaId())
                 .orElseThrow(() -> ApiException.naoAutorizado("Sua conta não existe mais. Entre novamente."));
+        if (usuario.isVisitante()) {
+            throw ApiException.proibido("Contas de demonstração não têm senha.");
+        }
         limitador.verificar(usuario.getEmail(), ip);
         if (!senhas.matches(pedido.senhaAtual(), usuario.getSenhaHash())) {
             limitador.registrarFalha(usuario.getEmail(), ip);

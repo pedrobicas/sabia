@@ -6,7 +6,9 @@ import com.pedrobicas.sabia.empresa.Empresa;
 import com.pedrobicas.sabia.usuario.Papel;
 import com.pedrobicas.sabia.usuario.Usuario;
 
-public record UsuarioResponse(UUID id, String nome, String email, Papel papel, UUID empresaId, String empresaNome) {
+/** {@code visitante} é verdadeiro para quem entrou pela demonstração pública (conta temporária, sem senha). */
+public record UsuarioResponse(UUID id, String nome, String email, Papel papel, UUID empresaId, String empresaNome,
+        boolean visitante) {
 
     public static UsuarioResponse de(Usuario usuario, Empresa empresa) {
         return new UsuarioResponse(
@@ -15,6 +17,7 @@ public record UsuarioResponse(UUID id, String nome, String email, Papel papel, U
                 usuario.getEmail(),
                 usuario.getPapel(),
                 empresa.getId(),
-                empresa.getNome());
+                empresa.getNome(),
+                usuario.isVisitante());
     }
 }

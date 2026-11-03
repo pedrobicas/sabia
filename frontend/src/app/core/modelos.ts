@@ -7,6 +7,8 @@ export interface Usuario {
   papel: Papel;
   empresaId: string;
   empresaNome: string;
+  /** Conta temporária da demonstração pública: não tem senha e é apagada depois de um tempo. */
+  visitante?: boolean;
 }
 
 export interface RespostaDeLogin {
@@ -14,10 +16,9 @@ export interface RespostaDeLogin {
   usuario: Usuario;
 }
 
+/** Empresa de demonstração. Cada visitante entra com uma conta temporária só dele. */
 export interface ContaDemo {
   empresa: string;
-  email: string;
-  senha: string;
 }
 
 export interface ConfiguracaoPublica {

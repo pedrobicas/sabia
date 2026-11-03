@@ -34,44 +34,51 @@ import { Sessao } from '../../core/sessao';
               <dd>{{ usuario.papel === 'ADMIN' ? 'Administrador' : 'Membro' }}</dd>
             </div>
           </dl>
-          @if (usuario.papel !== 'ADMIN') {
+          @if (usuario.visitante) {
+            <p class="dica">
+              Esta é uma conta temporária da demonstração. Ela não tem senha e é apagada, com as suas conversas,
+              em até um dia.
+            </p>
+          } @else if (usuario.papel !== 'ADMIN') {
             <p class="dica">Para mudar nome, e-mail ou papel, fale com um administrador da sua empresa.</p>
           }
         </section>
       }
 
-      <section class="cartao" aria-labelledby="titulo-senha">
-        <h2 id="titulo-senha">Trocar senha</h2>
-        <form [formGroup]="formulario" (ngSubmit)="trocar()" novalidate>
-          <div class="campo">
-            <label for="senha-atual">Senha atual</label>
-            <input id="senha-atual" type="password" formControlName="senhaAtual" autocomplete="current-password" />
-          </div>
-          <div class="campo">
-            <label for="nova-senha">Nova senha</label>
-            <input
-              id="nova-senha"
-              type="password"
-              formControlName="novaSenha"
-              autocomplete="new-password"
-              aria-describedby="dica-nova-senha"
-            />
-            <span class="dica" id="dica-nova-senha">Pelo menos 8 caracteres.</span>
-          </div>
-          <div class="campo">
-            <label for="confirmacao">Repita a nova senha</label>
-            <input id="confirmacao" type="password" formControlName="confirmacao" autocomplete="new-password" />
-          </div>
+      @if (!sessao.usuario()?.visitante) {
+        <section class="cartao" aria-labelledby="titulo-senha">
+          <h2 id="titulo-senha">Trocar senha</h2>
+          <form [formGroup]="formulario" (ngSubmit)="trocar()" novalidate>
+            <div class="campo">
+              <label for="senha-atual">Senha atual</label>
+              <input id="senha-atual" type="password" formControlName="senhaAtual" autocomplete="current-password" />
+            </div>
+            <div class="campo">
+              <label for="nova-senha">Nova senha</label>
+              <input
+                id="nova-senha"
+                type="password"
+                formControlName="novaSenha"
+                autocomplete="new-password"
+                aria-describedby="dica-nova-senha"
+              />
+              <span class="dica" id="dica-nova-senha">Pelo menos 8 caracteres.</span>
+            </div>
+            <div class="campo">
+              <label for="confirmacao">Repita a nova senha</label>
+              <input id="confirmacao" type="password" formControlName="confirmacao" autocomplete="new-password" />
+            </div>
 
-          @if (erro()) {
-            <p class="alerta-erro" role="alert">{{ erro() }}</p>
-          }
-          @if (sucesso()) {
-            <p class="sucesso" role="status">Senha alterada. Use a nova senha na próxima vez que entrar.</p>
-          }
-          <button type="submit" class="botao" [disabled]="enviando()">{{ enviando() ? 'Salvando...' : 'Trocar senha' }}</button>
-        </form>
-      </section>
+            @if (erro()) {
+              <p class="alerta-erro" role="alert">{{ erro() }}</p>
+            }
+            @if (sucesso()) {
+              <p class="sucesso" role="status">Senha alterada. Use a nova senha na próxima vez que entrar.</p>
+            }
+            <button type="submit" class="botao" [disabled]="enviando()">{{ enviando() ? 'Salvando...' : 'Trocar senha' }}</button>
+          </form>
+        </section>
+      }
     </div>
   `,
   styles: `

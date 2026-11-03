@@ -20,6 +20,7 @@ import com.pedrobicas.sabia.auth.UsuarioAtual;
 import com.pedrobicas.sabia.busca.BuscaDeTrechos;
 import com.pedrobicas.sabia.busca.TrechoEncontrado;
 import com.pedrobicas.sabia.comum.ApiException;
+import com.pedrobicas.sabia.demo.LimitadorDaDemonstracao;
 
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
@@ -51,20 +52,27 @@ public class AssistenteService {
     private final MontadorDePrompt montador;
     private final ConversaService conversas;
     private final LimitadorDePerguntas limitador;
+    private final LimitadorDaDemonstracao limitadorDaDemonstracao;
     private final ObjectMapper json;
 
     public AssistenteService(ChatClient chatClient, BuscaDeTrechos busca, MontadorDePrompt montador,
-            ConversaService conversas, LimitadorDePerguntas limitador, ObjectMapper json) {
+            ConversaService conversas, LimitadorDePerguntas limitador, LimitadorDaDemonstracao limitadorDaDemonstracao,
+            ObjectMapper json) {
         this.chatClient = chatClient;
         this.busca = busca;
         this.montador = montador;
         this.conversas = conversas;
         this.limitador = limitador;
+        this.limitadorDaDemonstracao = limitadorDaDemonstracao;
         this.json = json;
     }
 
     public SseEmitter responder(UsuarioAtual usuario, UUID conversaId, String pergunta) {
         limitador.registrar(usuario.id());
+        if (usuario.visitante()) {
+            // Na demonstração pública, também há um teto somando todos os visitantes (a busca já chama a IA).
+            limitadorDaDemonstracao.registrarPergunta();
+        }
         List<Message> historico = conversas.historicoParaOModelo(usuario, conversaId);
         String consulta = ConsultaDeBusca.montar(pergunta, ultimaPerguntaDoUsuario(historico));
         List<TrechoEncontrado> trechos = buscar(usuario.empresaId(), consulta);

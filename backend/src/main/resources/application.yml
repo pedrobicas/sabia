@@ -39,6 +39,9 @@ spring:
         embeddings-path: ${IA_EMBEDDINGS_PATH:/v1/embeddings}
         options:
           model: ${IA_MODELO_EMBEDDING:bge-m3}
+          # Vazio = o tamanho padrão do modelo. Preencha (igual a EMBEDDING_DIMENSIONS) quando o modelo gera
+          # vetores maiores que 2000 dimensões, o limite do índice HNSW do pgvector. Ex.: gemini-embedding-001.
+          dimensions: ${IA_EMBEDDING_DIMENSOES_PEDIDAS:}
     vectorstore:
       pgvector:
         # A tabela é criada pelo Flyway (V2), com a dimensão de EMBEDDING_DIMENSIONS.
@@ -81,4 +84,7 @@ sabia:
     origens: ${CORS_ORIGENS:}
   demo:
     habilitada: ${DEMO_HABILITADA:false}
-    senha: ${DEMO_SENHA:demo1234}
+    # Perguntas por hora que chegam ao modelo de IA, somando todos os visitantes da demonstração (0 desliga).
+    limite-perguntas-por-hora: ${DEMO_LIMITE_PERGUNTAS_POR_HORA:200}
+    # Contas temporárias de demonstração que um mesmo IP pode criar por hora (0 desliga).
+    visitantes-por-ip-por-hora: ${DEMO_VISITANTES_POR_IP_POR_HORA:20}

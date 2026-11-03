@@ -1,0 +1,48 @@
+# Blueprint da Render: sobe a demonstração pública do Sabiá a partir do Dockerfile da raiz.
+# O banco (PostgreSQL com pgvector) fica fora da Render; veja "Publicando a demonstração" no README.
+# Na criação, a Render pede os valores marcados com sync: false.
+
+services:
+  - type: web
+    name: sabia
+    runtime: docker
+    plan: free
+    healthCheckPath: /actuator/health
+    envVars:
+      # Banco, no formato JDBC: jdbc:postgresql://HOST/BANCO?sslmode=require
+      - key: DB_URL
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: JWT_SEGREDO
+        generateValue: true
+
+      # Gemini pela API compatível com a da OpenAI.
+      - key: IA_BASE_URL
+        value: https://generativelanguage.googleapis.com/v1beta/openai
+      - key: IA_CHAT_PATH
+        value: /chat/completions
+      - key: IA_EMBEDDINGS_PATH
+        value: /embeddings
+      - key: IA_API_KEY
+        sync: false
+      - key: IA_MODELO_CHAT
+        sync: false
+      - key: IA_MODELO_EMBEDDING
+        value: gemini-embedding-001
+      # O gemini-embedding-001 gera 3072 dimensões por padrão, acima do limite de 2000 do índice HNSW.
+      # Por isso o Sabiá pede 768 e cria a tabela com 768. Defina antes do primeiro deploy.
+      - key: EMBEDDING_DIMENSIONS
+        value: "768"
+      - key: IA_EMBEDDING_DIMENSOES_PEDIDAS
+        value: "768"
+
+      # Demonstração pública: empresas fictícias, sem cadastro aberto.
+      - key: DEMO_HABILITADA
+        value: "true"
+      - key: CADASTRO_ABERTO
+        value: "false"
+      - key: DEMO_LIMITE_PERGUNTAS_POR_HORA
+        value: "200"

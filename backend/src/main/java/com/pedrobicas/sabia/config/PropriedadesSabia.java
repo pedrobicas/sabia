@@ -28,7 +28,7 @@ public record PropriedadesSabia(
             cors = new Cors(List.of());
         }
         if (demo == null) {
-            demo = new Demo(false, "demo1234");
+            demo = new Demo(false, 200, 20);
         }
     }
 
@@ -48,7 +48,14 @@ public record PropriedadesSabia(
         }
     }
 
-    /** Modo de demonstração: cria empresas fictícias com documentos prontos. */
-    public record Demo(boolean habilitada, String senha) {
+    /**
+     * Modo de demonstração: cria empresas fictícias com documentos prontos, e cada visitante entra com uma conta
+     * temporária só dele.
+     *
+     * @param limitePerguntasPorHora perguntas que chegam ao modelo de IA por hora, somando todos os visitantes
+     *        (0 desliga). Protege a conta do provedor de IA numa demonstração pública.
+     * @param visitantesPorIpPorHora contas temporárias que um mesmo IP pode criar por hora (0 desliga)
+     */
+    public record Demo(boolean habilitada, int limitePerguntasPorHora, int visitantesPorIpPorHora) {
     }
 }

@@ -13,7 +13,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
- * O que a tela de entrada precisa saber antes do login: se o cadastro está aberto e quais contas de demonstração existem.
+ * O que a tela de entrada precisa saber antes do login: se o cadastro está aberto e quais empresas de demonstração existem.
  */
 @RestController
 @RequestMapping("/api/config")
@@ -37,6 +37,7 @@ public class ConfiguracaoPublicaController {
     public record ConfiguracaoPublica(boolean cadastroAberto, List<ContaDemo> contasDemo) {
     }
 
-    public record ContaDemo(String empresa, String email, String senha) {
+    /** Uma empresa de demonstração. Não há senha: cada visitante entra por POST /api/auth/demo. */
+    public record ContaDemo(String empresa) {
     }
 }
