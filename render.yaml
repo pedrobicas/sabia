@@ -1,5 +1,5 @@
 # Blueprint da Render: sobe a demonstração pública do Sabiá a partir do Dockerfile da raiz.
-# O banco (PostgreSQL com pgvector) fica fora da Render; veja "Publicando a demonstração" no README.
+# O banco (PostgreSQL com pgvector) fica fora da Render, no Neon, na região AWS US East 1.
 # Na criação, a Render pede os valores marcados com sync: false.
 
 services:
@@ -7,9 +7,11 @@ services:
     name: sabia
     runtime: docker
     plan: free
+    # Mesma região do banco (Neon aws-us-east-1), para a busca não pagar latência entre os dois.
+    region: virginia
     healthCheckPath: /actuator/health
     envVars:
-      # Banco, no formato JDBC: jdbc:postgresql://HOST/BANCO?sslmode=require
+      # Banco, no formato JDBC: jdbc:postgresql://HOST/BANCO?sslmode=require (conexão direta, sem pooler)
       - key: DB_URL
         sync: false
       - key: DB_USERNAME
@@ -29,15 +31,13 @@ services:
       - key: IA_API_KEY
         sync: false
       - key: IA_MODELO_CHAT
-        sync: false
+        value: gemini-3.5-flash-lite
       - key: IA_MODELO_EMBEDDING
         value: gemini-embedding-001
-      # O gemini-embedding-001 gera 3072 dimensões por padrão, acima do limite de 2000 do índice HNSW.
-      # Por isso o Sabiá pede 768 e cria a tabela com 768. Defina antes do primeiro deploy.
+      # Tamanho padrão do gemini-embedding-001. Acima de 2000, a migração V2 não cria o índice HNSW
+      # e a busca vetorial é sequencial, o que é rápido para os poucos trechos da demonstração.
       - key: EMBEDDING_DIMENSIONS
-        value: "768"
-      - key: IA_EMBEDDING_DIMENSOES_PEDIDAS
-        value: "768"
+        value: "3072"
 
       # Demonstração pública: empresas fictícias, sem cadastro aberto.
       - key: DEMO_HABILITADA
@@ -46,3 +46,7 @@ services:
         value: "false"
       - key: DEMO_LIMITE_PERGUNTAS_POR_HORA
         value: "200"
+
+      # Cabe nos 512 MB e 0,1 CPU do plano gratuito: heap menor e compilação JIT mais leve, que sobe mais rápido.
+      - key: JAVA_OPTS
+        value: -XX:MaxRAMPercentage=60 -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -XX:ReservedCodeCacheSize=64m -Xss512k -Djava.awt.headless=true

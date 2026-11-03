@@ -39,8 +39,8 @@ spring:
         embeddings-path: ${IA_EMBEDDINGS_PATH:/v1/embeddings}
         options:
           model: ${IA_MODELO_EMBEDDING:bge-m3}
-          # Vazio = o tamanho padrão do modelo. Preencha (igual a EMBEDDING_DIMENSIONS) quando o modelo gera
-          # vetores maiores que 2000 dimensões, o limite do índice HNSW do pgvector. Ex.: gemini-embedding-001.
+          # Opcional. Vazio = o tamanho padrão do modelo. Preenchido (igual a EMBEDDING_DIMENSIONS), pede vetores
+          # menores a provedores que aceitam o parâmetro "dimensions", como o text-embedding-3 da OpenAI.
           dimensions: ${IA_EMBEDDING_DIMENSOES_PEDIDAS:}
     vectorstore:
       pgvector:

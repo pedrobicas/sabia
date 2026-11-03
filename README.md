@@ -1,10 +1,11 @@
 # Sabiá
 
+[![CI](https://github.com/pedrobicas/sabia/actions/workflows/ci.yml/badge.svg)](https://github.com/pedrobicas/sabia/actions/workflows/ci.yml)
+
 Assistente de base de conhecimento para empresas. Você envia os documentos da empresa (manuais, políticas, perguntas frequentes) e qualquer pessoa da equipe pergunta em linguagem natural. Cada resposta mostra o documento e o trecho de onde a informação saiu, e quando a resposta não está nos documentos, o Sabiá diz que não encontrou em vez de inventar.
 
 ![Conversa com respostas citadas e o painel mostrando o trecho de origem](docs/imagens/conversa.png)
 
-<!-- Depois do deploy, troque esta linha por: **Demonstração online:** https://seu-endereco (o primeiro acesso pode levar cerca de um minuto, porque o servidor gratuito dorme quando ninguém usa) -->
 
 ## O que ele faz
 
@@ -118,7 +119,7 @@ Todas as variáveis têm um valor padrão para rodar localmente. A lista complet
 | `IA_BASE_URL`, `IA_API_KEY` | Provedor de IA compatível com a API da OpenAI |
 | `IA_MODELO_CHAT`, `IA_MODELO_EMBEDDING` | Modelos de resposta e de vetores |
 | `EMBEDDING_DIMENSIONS` | Dimensão dos vetores do modelo de embedding |
-| `IA_EMBEDDING_DIMENSOES_PEDIDAS` | Tamanho de vetor pedido ao provedor (necessário em modelos com mais de 2000 dimensões, como o `gemini-embedding-001`) |
+| `IA_EMBEDDING_DIMENSOES_PEDIDAS` | Opcional: pede vetores menores a provedores que aceitam o parâmetro `dimensions` |
 | `DEMO_HABILITADA` | Cria as empresas fictícias de demonstração |
 | `DEMO_LIMITE_PERGUNTAS_POR_HORA`, `DEMO_VISITANTES_POR_IP_POR_HORA` | Freios da demonstração pública (0 desliga) |
 | `CADASTRO_ABERTO` | Permite cadastrar novas empresas |
@@ -126,17 +127,9 @@ Todas as variáveis têm um valor padrão para rodar localmente. A lista complet
 | `LOGIN_TENTATIVAS_POR_EMAIL`, `LOGIN_TENTATIVAS_POR_IP`, `LOGIN_JANELA_MINUTOS` | Freio contra tentativas de adivinhar senha |
 | `FUSO_HORARIO` | Fuso usado para agrupar as perguntas por dia no painel |
 
-## Publicando a demonstração
+## Deploy
 
-O caminho gratuito usado aqui tem três peças, e todas têm plano sem cartão de crédito:
-
-1. **Banco:** um projeto no [Neon](https://neon.com) (PostgreSQL com pgvector). A migração do Flyway liga a extensão `vector` sozinha. Copie a conexão no formato JDBC: `jdbc:postgresql://HOST/BANCO?sslmode=require`, com usuário e senha à parte.
-2. **Modelo de IA:** uma chave do [Google AI Studio](https://aistudio.google.com) para o Gemini, que o Sabiá usa pela API compatível com a da OpenAI.
-3. **Aplicação:** clique no botão abaixo (ou, na [Render](https://render.com), **New > Blueprint** apontando para este repositório) e preencha o que o `render.yaml` pede: banco, chave da IA e o modelo de chat (um Flash do Gemini).
-
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/pedrobicas/sabia)
-
-O plano gratuito da Render dorme depois de 15 minutos sem acesso, então o primeiro acesso depois disso demora cerca de um minuto. Confira se o processamento dos documentos terminou na tela Documentos antes de divulgar o link.
+A aplicação é uma imagem Docker só (o Spring Boot serve o Angular) e precisa de um PostgreSQL com pgvector e de uma API compatível com a da OpenAI. O [`render.yaml`](render.yaml) sobe a demonstração na Render com o Gemini, e as variáveis estão em [`.env.example`](.env.example).
 
 ## Testes
 
