@@ -6,6 +6,8 @@ Assistente de base de conhecimento para empresas. Você envia os documentos da e
 
 ![Conversa com respostas citadas e o painel mostrando o trecho de origem](docs/imagens/conversa.png)
 
+**Demonstração:** [sabia-knzg.onrender.com](https://sabia-knzg.onrender.com). Clique em "Entrar como Café Aurora", sem cadastro. O servidor gratuito dorme quando ninguém usa, então o primeiro acesso pode levar cerca de um minuto.
+
 
 ## O que ele faz
 
