@@ -1,72 +1,86 @@
 /*
  * Sabiá: tokens e base.
  *
- * Paleta tirada do sabiá-laranjeira e do ato de consultar documentos:
- * papel levemente esverdeado, tinta oliva, musgo para ações e o amarelo de marca-texto,
- * reservado para o que é fonte (marcadores de citação e trechos citados).
- *
- * O tema escuro troca só os tokens de cor. Ele segue o sistema, a não ser que a pessoa
- * escolha claro ou escuro no botão do topo (atributo data-tema no <html>).
+ * Cinzas neutros, um azul para ações e links e um amarelo claro só para marcar o trecho citado.
+ * O tema escuro troca só os tokens de cor. Ele segue o sistema, a não ser que a pessoa escolha
+ * claro ou escuro no menu (atributo data-tema no <html>).
  */
 @mixin tema-escuro {
   color-scheme: dark;
-  --papel: #141812;
-  --superficie: #1b2019;
-  --tinta: #e6e9de;
-  --tinta-suave: #a9ae9c;
-  --linha: #2c3328;
-  --linha-forte: #454d3f;
-  --musgo: #9cc27f;
-  --musgo-escuro: #b6d59f;
-  --musgo-claro: #263220;
-  --sobre-musgo: #132010;
-  --marca-texto: #d6b44a;
-  --marca-texto-suave: #433a17;
-  --erro: #f2917d;
-  --erro-fundo: #3b211b;
-  --serie-1: #4a7533;
-  --serie-2: #ca8231;
-  --sombra: rgba(0, 0, 0, 0.45);
-  --foco: 0 0 0 3px rgba(156, 194, 127, 0.45);
+  --fundo: #121214;
+  --fundo-lateral: #0c0c0e;
+  --superficie: #18181b;
+  --superficie-2: #222226;
+  --superficie-3: #2c2c31;
+  --tinta: #ececef;
+  --tinta-suave: #a1a1aa;
+  --tinta-fraca: #8a8a93;
+  --linha: #26262b;
+  --linha-forte: #3a3a41;
+  --acento: #3d8bff;
+  --acento-forte: #6aa6ff;
+  --acento-suave: rgba(61, 139, 255, 0.14);
+  --botao: #2a66c9;
+  --botao-forte: #3474dc;
+  --marca-texto: rgba(250, 204, 21, 0.22);
+  --erro: #f97066;
+  --erro-fundo: rgba(240, 68, 56, 0.12);
+  --sucesso: #47cd89;
+  --atencao: #fdb022;
+  --serie-1: #3d8bff;
+  --serie-2: #e6a23c;
+  --sombra-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --sombra-2: 0 12px 32px rgba(0, 0, 0, 0.5);
+  --veu: rgba(0, 0, 0, 0.55);
+  --foco: 0 0 0 3px rgba(61, 139, 255, 0.35);
 }
 
 :root {
   color-scheme: light;
-  --papel: #f4f5f0;
-  --superficie: #fbfbf8;
-  --tinta: #1e2318;
-  --tinta-suave: #5c5f4f;
-  --linha: #d8dacd;
-  --linha-forte: #b9bcab;
-  --musgo: #3d5a2a;
-  --musgo-escuro: #2c431e;
-  --musgo-claro: #e3e9dc;
-  /* Texto sobre fundo musgo (botões) e sobre o amarelo (marcadores): não mudam de tom com o tema. */
-  --sobre-musgo: #ffffff;
-  --sobre-marca: #1e2318;
-  --marca-texto: #ebcb4e;
-  --marca-texto-suave: #f7eab0;
-  --erro: #9e3627;
-  --erro-fundo: #f6e3df;
+  --fundo: #ffffff;
+  --fundo-lateral: #f7f7f8;
+  --superficie: #ffffff;
+  --superficie-2: #f4f4f5;
+  --superficie-3: #e9e9ec;
+  --tinta: #18181b;
+  --tinta-suave: #52525b;
+  --tinta-fraca: #6b6b74;
+  --linha: #e7e7ea;
+  --linha-forte: #d4d4d8;
+  --acento: #1c57af;
+  --acento-forte: #174a95;
+  --acento-suave: #ebf1fb;
+  --botao: #1c57af;
+  --botao-forte: #174a95;
+  --sobre-botao: #ffffff;
+  --marca-texto: #fdf0b8;
+  --erro: #b42318;
+  --erro-fundo: #fef3f2;
+  --sucesso: #079455;
+  --atencao: #dc6803;
 
-  /* Séries dos gráficos (validadas para daltonismo contra --superficie) */
-  --serie-1: #3f6629;
-  --serie-2: #c4842f;
+  /* Séries dos gráficos: azul e âmbar se distinguem também para daltonismo. */
+  --serie-1: #1c57af;
+  --serie-2: #e0911f;
 
-  --fonte-interface: 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --fonte-leitura: 'Literata Variable', Georgia, 'Times New Roman', serif;
+  --fonte: 'Inter Variable', Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --fonte-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
 
-  /* Escala tipográfica 1,2 a partir de 16px */
-  --t-pequeno: 0.833rem;
-  --t-base: 1rem;
-  --t-medio: 1.2rem;
-  --t-grande: 1.44rem;
-  --t-titulo: 1.728rem;
-  --t-destaque: 2.488rem;
+  --t-mini: 0.75rem;
+  --t-pequeno: 0.8125rem;
+  --t-base: 0.875rem;
+  --t-leitura: 0.9375rem;
+  --t-medio: 1rem;
+  --t-titulo: 1.25rem;
+  --t-numero: 1.75rem;
 
-  --raio: 6px;
-  --sombra: rgba(30, 35, 24, 0.16);
-  --foco: 0 0 0 3px rgba(61, 90, 42, 0.35);
+  --raio: 8px;
+  --raio-pequeno: 6px;
+  --raio-grande: 12px;
+  --sombra-1: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --sombra-2: 0 12px 32px rgba(16, 24, 40, 0.14);
+  --veu: rgba(24, 24, 27, 0.32);
+  --foco: 0 0 0 3px rgba(28, 87, 175, 0.22);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -92,32 +106,47 @@ body {
 
 body {
   margin: 0;
-  background: var(--papel);
+  background: var(--fundo);
   color: var(--tinta);
-  font-family: var(--fonte-interface);
+  font-family: var(--fonte);
   font-size: var(--t-base);
   line-height: 1.5;
+  font-feature-settings: 'cv11', 'ss01';
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 h1,
 h2,
 h3 {
-  font-family: var(--fonte-leitura);
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.25;
+  letter-spacing: -0.011em;
+  margin: 0;
+}
+
+p {
   margin: 0;
 }
 
 a {
-  color: var(--musgo);
-  text-underline-offset: 3px;
+  color: var(--acento);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
 }
 
 :focus-visible {
   outline: none;
   box-shadow: var(--foco);
-  border-radius: var(--raio);
+  border-radius: var(--raio-pequeno);
+}
+
+::selection {
+  background: var(--acento-suave);
 }
 
 /* Botões */
@@ -125,104 +154,196 @@ a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  min-height: 2.5rem;
-  padding: 0 1.1rem;
-  border: 1px solid var(--musgo);
+  gap: 0.4rem;
+  height: 2.25rem;
+  padding: 0 0.9rem;
+  border: 1px solid transparent;
   border-radius: var(--raio);
-  background: var(--musgo);
-  color: var(--sobre-musgo);
+  background: var(--botao);
+  color: var(--sobre-botao, #fff);
   font: inherit;
-  font-weight: 700;
+  font-weight: 550;
+  white-space: nowrap;
   cursor: pointer;
   text-decoration: none;
-  transition: background-color 120ms ease;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
 
   &:hover:not(:disabled) {
-    background: var(--musgo-escuro);
+    background: var(--botao-forte);
+    text-decoration: none;
   }
 
   &:disabled {
-    opacity: 0.55;
+    opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  app-icone {
+    margin-left: -0.15rem;
   }
 }
 
 .botao-secundario {
   @extend .botao;
-  background: transparent;
-  color: var(--musgo);
+  background: var(--superficie);
+  color: var(--tinta);
+  border-color: var(--linha-forte);
+  box-shadow: var(--sombra-1);
 
   &:hover:not(:disabled) {
-    background: var(--musgo-claro);
+    background: var(--superficie-2);
   }
 }
 
 .botao-texto {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   border: 0;
   background: none;
-  padding: 0.25rem 0.4rem;
+  padding: 0.3rem 0.45rem;
   color: var(--tinta-suave);
   font: inherit;
   font-size: var(--t-pequeno);
   cursor: pointer;
-  border-radius: var(--raio);
+  border-radius: var(--raio-pequeno);
 
-  &:hover {
+  &:hover:not(:disabled) {
     color: var(--tinta);
-    text-decoration: underline;
+    background: var(--superficie-2);
   }
 
-  &.perigo:hover {
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+}
+
+/* Botão quadrado só com ícone. O texto vai no aria-label e no title. */
+.botao-icone {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--raio-pequeno);
+  background: none;
+  color: var(--tinta-fraca);
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    color: var(--tinta);
+    background: var(--superficie-2);
+  }
+
+  &.perigo:hover:not(:disabled) {
     color: var(--erro);
+    background: var(--erro-fundo);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  &.pequeno {
+    width: 1.75rem;
+    height: 1.75rem;
   }
 }
 
 /* Formulários */
 .campo {
   display: grid;
-  gap: 0.35rem;
+  gap: 0.375rem;
 
   label {
-    font-weight: 700;
+    font-weight: 500;
     font-size: var(--t-pequeno);
-  }
-
-  input,
-  select,
-  textarea {
-    font: inherit;
     color: var(--tinta);
-    background: var(--superficie);
-    border: 1px solid var(--linha-forte);
-    border-radius: var(--raio);
-    padding: 0.6rem 0.75rem;
-
-    &:focus {
-      outline: none;
-      border-color: var(--musgo);
-      box-shadow: var(--foco);
-    }
   }
 
   .dica {
-    color: var(--tinta-suave);
+    color: var(--tinta-fraca);
+    font-size: var(--t-mini);
+  }
+}
+
+.entrada,
+.campo input,
+.campo select,
+.campo textarea {
+  width: 100%;
+  height: 2.25rem;
+  font: inherit;
+  color: var(--tinta);
+  background: var(--superficie);
+  border: 1px solid var(--linha-forte);
+  border-radius: var(--raio);
+  padding: 0 0.7rem;
+  box-shadow: var(--sombra-1);
+  transition: border-color 120ms ease;
+
+  &::placeholder {
+    color: var(--tinta-fraca);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--acento);
+    box-shadow: var(--foco);
+  }
+}
+
+.campo textarea {
+  height: auto;
+  padding: 0.5rem 0.7rem;
+}
+
+.alerta-erro {
+  padding: 0.55rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--erro) 30%, transparent);
+  border-radius: var(--raio);
+  background: var(--erro-fundo);
+  color: var(--erro);
+  font-size: var(--t-pequeno);
+}
+
+/* Cabeçalho das páginas internas */
+.pagina {
+  max-width: 68rem;
+  margin: 0 auto;
+  padding: 1.75rem clamp(1rem, 4vw, 2.5rem) 4rem;
+}
+
+.cabecalho-pagina {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+
+  h1 {
+    font-size: var(--t-titulo);
+  }
+
+  .subtitulo {
+    margin-top: 0.15rem;
+    color: var(--tinta-fraca);
     font-size: var(--t-pequeno);
   }
 }
 
-.alerta-erro {
-  border-left: 3px solid var(--erro);
-  background: var(--erro-fundo);
-  color: var(--erro);
-  padding: 0.6rem 0.8rem;
-  border-radius: 0 var(--raio) var(--raio) 0;
-  font-size: var(--t-pequeno);
-}
-
 /* Tabelas */
-.rolagem-tabela {
-  position: relative;
+.quadro-tabela {
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  background: var(--superficie);
   overflow-x: auto;
 }
 
@@ -232,30 +353,75 @@ a {
 
   th {
     text-align: left;
-    font-size: var(--t-pequeno);
-    color: var(--tinta-suave);
-    font-weight: 700;
-    padding: 0.5rem 0.75rem;
-    border-bottom: 1px solid var(--linha-forte);
+    font-size: var(--t-mini);
+    color: var(--tinta-fraca);
+    font-weight: 500;
+    padding: 0.55rem 0.9rem;
+    background: var(--fundo-lateral);
+    border-bottom: 1px solid var(--linha);
+    white-space: nowrap;
   }
 
   td {
-    padding: 0.75rem;
+    padding: 0.7rem 0.9rem;
     border-bottom: 1px solid var(--linha);
-    vertical-align: top;
+    vertical-align: middle;
   }
+
+  tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  tbody tr:hover td {
+    background: color-mix(in srgb, var(--superficie-2) 55%, transparent);
+  }
+}
+
+.numero-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Etiqueta pequena (versão, papel, tipo de arquivo) */
+.etiqueta {
+  display: inline-flex;
+  align-items: center;
+  height: 1.25rem;
+  padding: 0 0.4rem;
+  border: 1px solid var(--linha);
+  border-radius: 4px;
+  background: var(--superficie-2);
+  color: var(--tinta-suave);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Iniciais de uma pessoa ou empresa */
+.avatar {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  background: var(--superficie-3);
+  color: var(--tinta-suave);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 kbd {
   display: inline-block;
+  min-width: 1.2rem;
   padding: 0 0.3rem;
   border: 1px solid var(--linha-forte);
-  border-bottom-width: 2px;
   border-radius: 4px;
   background: var(--superficie);
-  font-family: var(--fonte-interface);
-  font-size: 0.85em;
-  line-height: 1.35;
+  font-family: var(--fonte);
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  text-align: center;
 }
 
 .so-leitor-de-tela {
@@ -266,7 +432,24 @@ kbd {
   margin: -1px;
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
   border: 0;
+}
+
+.girando {
+  display: inline-block;
+  width: 0.8rem;
+  height: 0.8rem;
+  border: 1.5px solid var(--linha-forte);
+  border-top-color: var(--tinta-suave);
+  border-radius: 50%;
+  animation: girar 0.8s linear infinite;
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -274,6 +457,7 @@ kbd {
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
 }

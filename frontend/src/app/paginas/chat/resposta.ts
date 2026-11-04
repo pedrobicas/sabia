@@ -5,7 +5,7 @@ import { formatarResposta } from '../../core/formatar-resposta';
 import { Citacao } from '../../core/modelos';
 
 /**
- * Uma resposta do assistente: texto em fonte de leitura, marcadores [n] clicáveis e a lista de fontes.
+ * Uma resposta do assistente: o texto, os marcadores [n] clicáveis e a lista de fontes.
  */
 @Component({
   selector: 'app-resposta',
@@ -22,7 +22,9 @@ import { Citacao } from '../../core/modelos';
               <button
                 type="button"
                 class="marcador"
+                [class.ativo]="fonteAtiva() === parte.numero"
                 [attr.aria-label]="'Ver fonte ' + parte.numero + ': ' + fonte.documentoNome"
+                [title]="fonte.documentoNome"
                 (click)="citar.emit(fonte)"
               >{{ parte.numero }}</button>
             } @else {
@@ -53,11 +55,16 @@ import { Citacao } from '../../core/modelos';
         <ul>
           @for (fonte of citacoes(); track fonte.numero) {
             <li>
-              <button type="button" (click)="citar.emit(fonte)">
+              <button
+                type="button"
+                [class.ativo]="fonteAtiva() === fonte.numero"
+                [attr.aria-pressed]="fonteAtiva() === fonte.numero"
+                (click)="citar.emit(fonte)"
+              >
                 <span class="numero">{{ fonte.numero }}</span>
                 <span class="documento">{{ fonte.documentoNome }}</span>
                 @if (fonte.pagina) {
-                  <span class="pagina">página {{ fonte.pagina }}</span>
+                  <span class="pag">p. {{ fonte.pagina }}</span>
                 }
               </button>
             </li>
@@ -71,69 +78,82 @@ import { Citacao } from '../../core/modelos';
       display: block;
     }
     .texto {
-      font-family: var(--fonte-leitura);
-      font-size: 1.075rem;
+      font-size: var(--t-leitura);
       line-height: 1.7;
-      max-width: 68ch;
+      color: var(--tinta);
     }
     p {
-      margin: 0 0 0.8rem;
+      margin: 0 0 0.75rem;
+    }
+    p:last-of-type {
+      margin-bottom: 0;
+    }
+    strong {
+      font-weight: 600;
     }
     p.item {
       position: relative;
-      padding-left: 1.25rem;
-      margin-bottom: 0.4rem;
+      padding-left: 1.1rem;
+      margin-bottom: 0.3rem;
     }
     p.item::before {
       content: '';
       position: absolute;
       left: 0.3rem;
-      top: 0.75em;
-      width: 0.35rem;
-      height: 0.35rem;
+      top: 0.72em;
+      width: 0.3rem;
+      height: 0.3rem;
       border-radius: 50%;
-      background: var(--tinta-suave);
+      background: var(--tinta-fraca);
+    }
+    p.item + p:not(.item) {
+      margin-top: 0.75rem;
     }
     p.titulo {
-      font-weight: 650;
+      font-weight: 600;
       margin-top: 1rem;
     }
     p.nota {
-      font-family: var(--fonte-interface);
       font-size: var(--t-pequeno);
-      font-style: italic;
-      color: var(--tinta-suave);
+      color: var(--tinta-fraca);
     }
     .marcador {
-      display: inline-block;
-      margin: 0 0 0 0.12rem;
-      padding: 0 0.35rem;
+      display: inline-grid;
+      place-items: center;
+      min-width: 1.05rem;
+      height: 1.05rem;
+      margin: 0 0.05rem 0 0.15rem;
+      padding: 0 0.2rem;
       border: 0;
-      border-radius: 3px;
-      background: var(--marca-texto);
-      color: var(--sobre-marca);
-      font-family: var(--fonte-interface);
-      font-size: 0.7rem;
-      font-weight: 700;
-      line-height: 1.5;
-      vertical-align: super;
+      border-radius: 4px;
+      background: var(--acento-suave);
+      color: var(--acento);
+      font: inherit;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      line-height: 1;
+      vertical-align: 0.15em;
       cursor: pointer;
+      font-variant-numeric: tabular-nums;
     }
-    button.marcador:hover {
-      background: var(--tinta);
-      color: var(--papel);
+    button.marcador:hover,
+    .marcador.ativo {
+      background: var(--botao);
+      color: #fff;
     }
     .marcador.inativo {
-      background: var(--linha);
+      background: var(--superficie-2);
+      color: var(--tinta-fraca);
       cursor: default;
     }
     .cursor {
       display: inline-block;
-      width: 0.5rem;
-      height: 1.1em;
+      width: 0.45rem;
+      height: 1em;
       margin-left: 0.15rem;
-      vertical-align: text-bottom;
-      background: var(--musgo);
+      vertical-align: -0.12em;
+      border-radius: 1px;
+      background: var(--tinta-suave);
       animation: piscar 1s steps(2, start) infinite;
     }
     @keyframes piscar {
@@ -142,55 +162,81 @@ import { Citacao } from '../../core/modelos';
       }
     }
     .fontes {
-      margin-top: 0.75rem;
-      padding-top: 0.75rem;
-      border-top: 1px dashed var(--linha-forte);
-      max-width: 68ch;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      margin-top: 1rem;
     }
     h3 {
-      font-family: var(--fonte-interface);
-      font-size: var(--t-pequeno);
-      font-weight: 700;
-      color: var(--tinta-suave);
-      margin-bottom: 0.4rem;
+      flex: none;
+      line-height: 1.75rem;
+      font-size: var(--t-mini);
+      font-weight: 500;
+      color: var(--tinta-fraca);
     }
     ul {
-      list-style: none;
-      margin: 0;
-      padding: 0;
+      flex: 1;
+      min-width: 0;
       display: flex;
       flex-wrap: wrap;
-      gap: 0.4rem 1rem;
+      gap: 0.375rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    li {
+      min-width: 0;
+      max-width: 100%;
     }
     .fontes button {
       display: inline-flex;
-      align-items: baseline;
+      align-items: center;
       gap: 0.4rem;
-      border: 0;
-      background: none;
-      padding: 0.15rem 0;
+      max-width: 100%;
+      height: 1.75rem;
+      padding: 0 0.55rem 0 0.3rem;
+      border: 1px solid var(--linha);
+      border-radius: var(--raio-pequeno);
+      background: var(--superficie);
+      color: var(--tinta-suave);
       font: inherit;
       font-size: var(--t-pequeno);
-      color: var(--tinta);
       cursor: pointer;
       text-align: left;
     }
-    .fontes button:hover .documento {
-      text-decoration: underline;
+    .fontes button:hover {
+      border-color: var(--linha-forte);
+      color: var(--tinta);
+    }
+    .fontes button.ativo {
+      border-color: var(--acento);
+      color: var(--tinta);
+      box-shadow: 0 0 0 1px var(--acento);
     }
     .numero {
-      display: inline-grid;
+      display: grid;
       place-items: center;
-      min-width: 1.2rem;
-      height: 1.2rem;
-      border-radius: 3px;
-      background: var(--marca-texto);
-      color: var(--sobre-marca);
-      font-weight: 700;
-      font-size: 0.7rem;
-    }
-    .pagina {
+      min-width: 1.1rem;
+      height: 1.1rem;
+      border-radius: 4px;
+      background: var(--superficie-2);
       color: var(--tinta-suave);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+    .ativo .numero {
+      background: var(--botao);
+      color: #fff;
+    }
+    .documento {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .pag {
+      color: var(--tinta-fraca);
+      white-space: nowrap;
     }
   `,
 })
@@ -198,6 +244,8 @@ export class Resposta {
   readonly texto = input.required<string>();
   readonly citacoes = input<Citacao[]>([]);
   readonly digitando = input(false);
+  /** Número da fonte aberta no painel, para marcar o marcador e o item da lista. */
+  readonly fonteAtiva = input<number | null>(null);
   readonly citar = output<Citacao>();
 
   protected readonly blocos = computed(() => formatarResposta(this.texto()));

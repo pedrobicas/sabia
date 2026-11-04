@@ -23,3 +23,10 @@ export function tamanho(bytes: number): string {
   }
   return `${(bytes / (1024 * 1024)).toFixed(1).replace('.', ',')} MB`;
 }
+
+/** Sigla do tipo de arquivo pela extensão do nome ("manual.pdf" vira "PDF"). */
+export function siglaDoArquivo(nome: string): string {
+  const extensao = nome.split('.').pop()?.toLowerCase() ?? '';
+  const siglas: Record<string, string> = { pdf: 'PDF', docx: 'DOCX', md: 'MD', markdown: 'MD', txt: 'TXT' };
+  return siglas[extensao] ?? 'ARQ';
+}

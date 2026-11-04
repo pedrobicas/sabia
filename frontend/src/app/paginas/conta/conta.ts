@@ -1,5 +1,11 @@
 import { Component, inject, signal } from '@angular/core';
-import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormBuilder,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
 
 import { Api } from '../../core/api';
 import { mensagemDeErro } from '../../core/autenticacao';
@@ -11,93 +17,111 @@ import { Sessao } from '../../core/sessao';
   imports: [ReactiveFormsModule],
   template: `
     <div class="pagina">
-      <h1>Minha conta</h1>
+      <div class="estreita">
+        <header class="cabecalho-pagina">
+          <h1>Minha conta</h1>
+        </header>
 
-      @if (sessao.usuario(); as usuario) {
-        <section class="cartao" aria-labelledby="titulo-dados">
-          <h2 id="titulo-dados">Seus dados</h2>
-          <dl>
-            <div>
-              <dt>Nome</dt>
-              <dd>{{ usuario.nome }}</dd>
-            </div>
-            <div>
-              <dt>E-mail</dt>
-              <dd>{{ usuario.email }}</dd>
-            </div>
-            <div>
-              <dt>Empresa</dt>
-              <dd>{{ usuario.empresaNome }}</dd>
-            </div>
-            <div>
-              <dt>Papel</dt>
-              <dd>{{ usuario.papel === 'ADMIN' ? 'Administrador' : 'Membro' }}</dd>
-            </div>
-          </dl>
-          @if (usuario.visitante) {
-            <p class="dica">
-              Esta é uma conta temporária da demonstração. Ela não tem senha e é apagada, com as suas conversas,
-              em até um dia.
-            </p>
-          } @else if (usuario.papel !== 'ADMIN') {
-            <p class="dica">Para mudar nome, e-mail ou papel, fale com um administrador da sua empresa.</p>
-          }
-        </section>
-      }
-
-      @if (!sessao.usuario()?.visitante) {
-        <section class="cartao" aria-labelledby="titulo-senha">
-          <h2 id="titulo-senha">Trocar senha</h2>
-          <form [formGroup]="formulario" (ngSubmit)="trocar()" novalidate>
-            <div class="campo">
-              <label for="senha-atual">Senha atual</label>
-              <input id="senha-atual" type="password" formControlName="senhaAtual" autocomplete="current-password" />
-            </div>
-            <div class="campo">
-              <label for="nova-senha">Nova senha</label>
-              <input
-                id="nova-senha"
-                type="password"
-                formControlName="novaSenha"
-                autocomplete="new-password"
-                aria-describedby="dica-nova-senha"
-              />
-              <span class="dica" id="dica-nova-senha">Pelo menos 8 caracteres.</span>
-            </div>
-            <div class="campo">
-              <label for="confirmacao">Repita a nova senha</label>
-              <input id="confirmacao" type="password" formControlName="confirmacao" autocomplete="new-password" />
-            </div>
-
-            @if (erro()) {
-              <p class="alerta-erro" role="alert">{{ erro() }}</p>
+        @if (sessao.usuario(); as usuario) {
+          <section class="cartao" aria-labelledby="titulo-dados">
+            <h2 id="titulo-dados">Dados</h2>
+            <dl>
+              <div>
+                <dt>Nome</dt>
+                <dd>{{ usuario.nome }}</dd>
+              </div>
+              <div>
+                <dt>E-mail</dt>
+                <dd>{{ usuario.email }}</dd>
+              </div>
+              <div>
+                <dt>Empresa</dt>
+                <dd>{{ usuario.empresaNome }}</dd>
+              </div>
+              <div>
+                <dt>Papel</dt>
+                <dd>{{ usuario.papel === 'ADMIN' ? 'Administrador' : 'Membro' }}</dd>
+              </div>
+            </dl>
+            @if (usuario.visitante) {
+              <p class="dica">
+                Conta temporária da demonstração. Ela não tem senha e é apagada, com as conversas,
+                em até um dia.
+              </p>
+            } @else if (usuario.papel !== 'ADMIN') {
+              <p class="dica">
+                Para mudar nome, e-mail ou papel, fale com um administrador da empresa.
+              </p>
             }
-            @if (sucesso()) {
-              <p class="sucesso" role="status">Senha alterada. Use a nova senha na próxima vez que entrar.</p>
-            }
-            <button type="submit" class="botao" [disabled]="enviando()">{{ enviando() ? 'Salvando...' : 'Trocar senha' }}</button>
-          </form>
-        </section>
-      }
+          </section>
+        }
+
+        @if (!sessao.usuario()?.visitante) {
+          <section class="cartao" aria-labelledby="titulo-senha">
+            <h2 id="titulo-senha">Trocar senha</h2>
+            <form [formGroup]="formulario" (ngSubmit)="trocar()" novalidate>
+              <div class="campo">
+                <label for="senha-atual">Senha atual</label>
+                <input
+                  id="senha-atual"
+                  type="password"
+                  formControlName="senhaAtual"
+                  autocomplete="current-password"
+                />
+              </div>
+              <div class="campo">
+                <label for="nova-senha">Nova senha</label>
+                <input
+                  id="nova-senha"
+                  type="password"
+                  formControlName="novaSenha"
+                  autocomplete="new-password"
+                  aria-describedby="dica-nova-senha"
+                />
+                <span class="dica" id="dica-nova-senha">Pelo menos 8 caracteres.</span>
+              </div>
+              <div class="campo">
+                <label for="confirmacao">Repita a nova senha</label>
+                <input
+                  id="confirmacao"
+                  type="password"
+                  formControlName="confirmacao"
+                  autocomplete="new-password"
+                />
+              </div>
+
+              @if (erro()) {
+                <p class="alerta-erro" role="alert">{{ erro() }}</p>
+              }
+              @if (sucesso()) {
+                <p class="sucesso" role="status">
+                  Senha alterada. Use a nova senha na próxima vez que entrar.
+                </p>
+              }
+              <button type="submit" class="botao" [disabled]="enviando()">
+                {{ enviando() ? 'Salvando...' : 'Trocar senha' }}
+              </button>
+            </form>
+          </section>
+        }
+      </div>
     </div>
   `,
   styles: `
-    .pagina {
+    .estreita {
       max-width: 40rem;
-      margin: 0 auto;
-      padding: 2rem clamp(1rem, 4vw, 2.5rem) 4rem;
       display: grid;
-      gap: 1.25rem;
+      gap: 1rem;
     }
-    h1 {
-      font-size: var(--t-titulo);
+    .cabecalho-pagina {
+      margin-bottom: 0.5rem;
     }
     h2 {
-      font-size: var(--t-medio);
+      font-size: var(--t-base);
       margin-bottom: 1rem;
     }
     .cartao {
-      padding: 1.25rem;
+      padding: 1.1rem 1.15rem 1.2rem;
       background: var(--superficie);
       border: 1px solid var(--linha);
       border-radius: var(--raio);
@@ -109,35 +133,35 @@ import { Sessao } from '../../core/sessao';
       margin: 0;
     }
     dt {
-      font-size: var(--t-pequeno);
-      font-weight: 700;
-      color: var(--tinta-suave);
+      font-size: var(--t-mini);
+      color: var(--tinta-fraca);
     }
     dd {
       margin: 0.1rem 0 0;
       overflow-wrap: anywhere;
     }
     .dica {
-      margin: 1rem 0 0;
-      color: var(--tinta-suave);
+      margin-top: 1rem;
+      padding-top: 0.875rem;
+      border-top: 1px solid var(--linha);
+      color: var(--tinta-fraca);
       font-size: var(--t-pequeno);
     }
     .campo .dica {
       margin: 0;
+      padding: 0;
+      border: 0;
     }
     form {
       display: grid;
-      gap: 1rem;
+      gap: 0.875rem;
+      max-width: 24rem;
     }
     form .botao {
       justify-self: start;
     }
-    .alerta-erro,
     .sucesso {
-      margin: 0;
-    }
-    .sucesso {
-      color: var(--musgo);
+      color: var(--sucesso);
       font-size: var(--t-pequeno);
     }
     @media (max-width: 520px) {

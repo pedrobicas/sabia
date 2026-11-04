@@ -11,7 +11,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 import { Api, salvarArquivo } from '../../core/api';
 import { mensagemDeErro } from '../../core/autenticacao';
@@ -19,10 +19,12 @@ import { Avisos } from '../../core/avisos';
 import { ChatAoVivo } from '../../core/chat-ao-vivo';
 import { conversaEmMarkdown, nomeDeArquivo, respostaParaCopiar } from '../../core/exportar';
 import { RESPOSTA_INTERROMPIDA } from '../../core/formatar-resposta';
-import { Avaliacao, Citacao, Conversa, Mensagem } from '../../core/modelos';
+import { ListaDeConversas } from '../../core/lista-de-conversas';
+import { Avaliacao, Citacao, Mensagem } from '../../core/modelos';
 import { Sessao } from '../../core/sessao';
-import { normalizar } from '../../core/texto';
+import { Icone } from '../shell/icone';
 import { AvaliacaoResposta } from './avaliacao-resposta';
+import { PainelDaFonte } from './painel-da-fonte';
 import { PerguntasPendentes } from './perguntas-pendentes';
 import { Resposta } from './resposta';
 
@@ -32,69 +34,26 @@ interface RespostaEmAndamento {
   citacoes: Citacao[];
 }
 
+interface FonteAberta {
+  citacao: Citacao;
+  /** Mensagem que citou a fonte ("andamento" enquanto a resposta ainda está chegando). */
+  mensagemId: string;
+  resposta: string;
+}
+
 /** Distância do fim (em px) dentro da qual a conversa continua acompanhando o texto que chega. */
 const PERTO_DO_FIM = 120;
 
 @Component({
   selector: 'app-chat',
-  imports: [RouterLink, RouterLinkActive, Resposta, AvaliacaoResposta],
+  imports: [RouterLink, Resposta, AvaliacaoResposta, PainelDaFonte, Icone],
   host: {
     '(document:keydown)': 'aoApertarTecla($event)',
   },
   template: `
     <div class="layout" [class.com-fonte]="fonteAberta()">
-      <aside class="conversas" [class.aberta]="listaAberta()" aria-label="Conversas">
-        <a routerLink="/chat" class="botao nova" (click)="listaAberta.set(false)">Nova conversa</a>
-        @if (conversas().length > 3) {
-          <div class="filtro">
-            <label for="filtro-conversas" class="so-leitor-de-tela">Buscar conversas</label>
-            <input
-              id="filtro-conversas"
-              #campoFiltro
-              type="search"
-              placeholder="Buscar conversas"
-              autocomplete="off"
-              [value]="filtro()"
-              (input)="filtro.set(campoFiltro.value)"
-            />
-          </div>
-        }
-        @if (conversas().length === 0) {
-          <p class="vazio-lista">Suas conversas aparecem aqui.</p>
-        } @else if (conversasFiltradas().length === 0) {
-          <p class="vazio-lista">Nenhuma conversa com "{{ filtro().trim() }}".</p>
-        }
-        <ul>
-          @for (conversa of conversasFiltradas(); track conversa.id) {
-            <li>
-              <a
-                [routerLink]="['/chat', conversa.id]"
-                routerLinkActive="ativa"
-                ariaCurrentWhenActive="page"
-                [title]="conversa.titulo"
-                (click)="listaAberta.set(false)"
-              >{{ conversa.titulo }}</a>
-              <button
-                type="button"
-                class="excluir"
-                [attr.aria-label]="'Excluir a conversa ' + conversa.titulo"
-                (click)="excluirConversa(conversa)"
-              >Excluir</button>
-            </li>
-          }
-        </ul>
-      </aside>
-
       <section class="fio" [attr.aria-busy]="emAndamento() !== null">
-        <div class="topo-fio" [class.vazio]="!conversaAtual()">
-          <button
-            type="button"
-            class="botao-texto alternar-lista"
-            [attr.aria-expanded]="listaAberta()"
-            (click)="listaAberta.set(!listaAberta())"
-          >
-            {{ listaAberta() ? 'Fechar lista' : 'Ver conversas' }}
-          </button>
+        <header class="topo">
           @if (conversaAtual(); as conversa) {
             @if (renomeando()) {
               <form class="renomear" (submit)="$event.preventDefault(); salvarTitulo(campoTitulo.value)">
@@ -102,132 +61,190 @@ const PERTO_DO_FIM = 120;
                 <input
                   id="titulo-conversa"
                   #campoTitulo
+                  class="entrada"
                   maxlength="200"
                   [value]="conversa.titulo"
                   (keydown.escape)="$event.stopPropagation(); renomeando.set(false)"
                 />
-                <button type="submit" class="botao-texto">Salvar</button>
+                <button type="submit" class="botao">Salvar</button>
                 <button type="button" class="botao-texto" (click)="renomeando.set(false)">Cancelar</button>
               </form>
             } @else {
-              <h1 class="titulo-conversa" [title]="conversa.titulo">{{ conversa.titulo }}</h1>
+              <h1 class="titulo" [title]="conversa.titulo">{{ conversa.titulo }}</h1>
               <div class="acoes-conversa">
-                <button type="button" class="botao-texto" (click)="comecarARenomear()">Renomear</button>
-                <button type="button" class="botao-texto" [disabled]="mensagens().length === 0" (click)="exportar()">
-                  Exportar
+                <button type="button" class="botao-icone" aria-label="Renomear a conversa" title="Renomear" (click)="comecarARenomear()">
+                  <app-icone nome="lapis" />
                 </button>
-                <button type="button" class="botao-texto perigo" (click)="excluirConversa(conversa)">Excluir</button>
+                <button
+                  type="button"
+                  class="botao-icone"
+                  aria-label="Exportar a conversa em Markdown"
+                  title="Exportar em Markdown"
+                  [disabled]="mensagens().length === 0"
+                  (click)="exportar()"
+                >
+                  <app-icone nome="baixar" />
+                </button>
+                <button
+                  type="button"
+                  class="botao-icone perigo"
+                  aria-label="Excluir a conversa"
+                  title="Excluir"
+                  (click)="excluirConversa()"
+                >
+                  <app-icone nome="lixeira" />
+                </button>
               </div>
             }
+          } @else {
+            <h1 class="titulo nova">Nova conversa</h1>
           }
-        </div>
+        </header>
 
         <div class="mensagens" #rolagem>
-          @if (carregando()) {
-            <p class="aviso">Carregando a conversa...</p>
-          } @else if (mensagens().length === 0 && !emAndamento()) {
-            <div class="boas-vindas">
-              <h1>O que você quer saber?</h1>
-              <p>O Sabiá responde usando os documentos de {{ sessao.usuario()?.empresaNome }} e mostra de onde tirou cada informação.</p>
-              @if (sugestoes().length > 0) {
-                <h2 class="titulo-sugestoes">Perguntas frequentes por aqui</h2>
-                <div class="sugestoes">
-                  @for (sugestao of sugestoes(); track sugestao) {
-                    <button type="button" class="botao-secundario" (click)="usarSugestao(sugestao)">{{ sugestao }}</button>
+          <div class="coluna">
+            @if (carregando()) {
+              <p class="status"><span class="girando" aria-hidden="true"></span>Carregando a conversa</p>
+            } @else if (mensagens().length === 0 && !emAndamento()) {
+              <div class="inicio">
+                <h2>Pergunte sobre os documentos de {{ sessao.usuario()?.empresaNome }}</h2>
+                <p class="contexto">
+                  @if (documentosProntos() !== null) {
+                    @switch (documentosProntos()) {
+                      @case (0) {
+                        Nenhum documento pronto ainda.
+                      }
+                      @case (1) {
+                        1 documento disponível para consulta.
+                      }
+                      @default {
+                        {{ documentosProntos() }} documentos disponíveis para consulta.
+                      }
+                    }
+                    <a routerLink="/documentos">Ver documentos</a>
                   }
-                </div>
-              }
-            </div>
-          }
-
-          @for (mensagem of mensagens(); track mensagem.id) {
-            @if (mensagem.papel === 'USUARIO') {
-              <h2 class="pergunta">{{ mensagem.conteudo }}</h2>
-            } @else {
-              <app-resposta [texto]="mensagem.conteudo" [citacoes]="mensagem.citacoes" (citar)="abrirFonte($event)" />
-              <div class="rodape-resposta">
-                @if (id() && !ehLocal(mensagem)) {
-                  <app-avaliacao-resposta
-                    [conversaId]="id()!"
-                    [mensagemId]="mensagem.id"
-                    [avaliacao]="mensagem.avaliacao ?? null"
-                    (mudou)="guardarAvaliacao(mensagem.id, $event)"
-                  />
+                </p>
+                @if (sugestoes().length > 0) {
+                  <h3>Perguntas frequentes</h3>
+                  <ul class="sugestoes">
+                    @for (sugestao of sugestoes(); track sugestao) {
+                      <li>
+                        <button type="button" (click)="usarSugestao(sugestao)">
+                          <span>{{ sugestao }}</span>
+                          <app-icone nome="direita" [tamanho]="14" />
+                        </button>
+                      </li>
+                    }
+                  </ul>
                 }
-                <button type="button" class="botao-texto copiar" (click)="copiar(mensagem)">
-                  <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="6.5" y="6.5" width="10" height="11" rx="1.5" /><path d="M13.5 6.5V4a1.5 1.5 0 0 0-1.5-1.5H5A1.5 1.5 0 0 0 3.5 4v9A1.5 1.5 0 0 0 5 14.5h1.5" /></svg>
-                  Copiar
-                </button>
               </div>
             }
-          }
 
-          @if (emAndamento(); as andamento) {
-            <h2 class="pergunta">{{ andamento.pergunta }}</h2>
-            @if (andamento.texto === '') {
-              <p class="aviso">Procurando nos documentos...</p>
-            } @else {
-              <app-resposta
-                [texto]="andamento.texto"
-                [citacoes]="andamento.citacoes"
-                [digitando]="true"
-                (citar)="abrirFonte($event)"
-              />
+            @for (mensagem of mensagens(); track mensagem.id) {
+              @if (mensagem.papel === 'USUARIO') {
+                <div class="pergunta">
+                  <p>{{ mensagem.conteudo }}</p>
+                </div>
+              } @else {
+                <div class="resposta">
+                  <app-resposta
+                    [texto]="mensagem.conteudo"
+                    [citacoes]="mensagem.citacoes"
+                    [fonteAtiva]="fonteAberta()?.mensagemId === mensagem.id ? fonteAberta()!.citacao.numero : null"
+                    (citar)="abrirFonte($event, mensagem.id, mensagem.conteudo)"
+                  />
+                  <div class="acoes-resposta">
+                    <button
+                      type="button"
+                      class="botao-icone pequeno"
+                      aria-label="Copiar a resposta com as fontes"
+                      title="Copiar"
+                      (click)="copiar(mensagem)"
+                    >
+                      <app-icone nome="copiar" [tamanho]="15" />
+                    </button>
+                    @if (id() && !ehLocal(mensagem)) {
+                      <app-avaliacao-resposta
+                        [conversaId]="id()!"
+                        [mensagemId]="mensagem.id"
+                        [avaliacao]="mensagem.avaliacao ?? null"
+                        (mudou)="guardarAvaliacao(mensagem.id, $event)"
+                      />
+                    }
+                  </div>
+                </div>
+              }
             }
-          }
 
-          @if (erro()) {
-            <p class="alerta-erro" role="alert">{{ erro() }}</p>
-          }
+            @if (emAndamento(); as andamento) {
+              <div class="pergunta">
+                <p>{{ andamento.pergunta }}</p>
+              </div>
+              <div class="resposta">
+                @if (andamento.texto === '') {
+                  <p class="status"><span class="girando" aria-hidden="true"></span>Buscando nos documentos</p>
+                } @else {
+                  <app-resposta
+                    [texto]="andamento.texto"
+                    [citacoes]="andamento.citacoes"
+                    [digitando]="true"
+                    [fonteAtiva]="fonteAberta()?.mensagemId === 'andamento' ? fonteAberta()!.citacao.numero : null"
+                    (citar)="abrirFonte($event, 'andamento', andamento.texto)"
+                  />
+                }
+              </div>
+            }
+
+            @if (erro()) {
+              <p class="alerta-erro" role="alert">{{ erro() }}</p>
+            }
+          </div>
         </div>
 
         <p class="so-leitor-de-tela" aria-live="polite">{{ anuncio() }}</p>
 
         <form class="compositor" (submit)="$event.preventDefault(); perguntar()">
-          <label for="pergunta" class="so-leitor-de-tela">Sua pergunta</label>
-          <textarea
-            id="pergunta"
-            #campo
-            rows="2"
-            maxlength="2000"
-            placeholder="Pergunte sobre os documentos da empresa"
-            aria-describedby="dica-compositor"
-            [value]="pergunta()"
-            (input)="pergunta.set(campo.value)"
-            (keydown.enter)="aoApertarEnter($any($event))"
-          ></textarea>
-          <div class="acoes">
-            <span class="dica" id="dica-compositor">
-              <kbd>Enter</kbd> envia · <kbd>Shift</kbd> + <kbd>Enter</kbd> quebra a linha · <kbd>/</kbd> volta para cá
-            </span>
-            @if (emAndamento()) {
-              <button type="button" class="botao-secundario parar" (click)="parar()">
-                <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="5" y="5" width="10" height="10" rx="1.5" /></svg>
-                Parar
-              </button>
-            } @else {
-              <button type="submit" class="botao" [disabled]="!pergunta().trim()">Perguntar</button>
-            }
+          <div class="caixa" (click)="campo.focus()">
+            <label for="pergunta" class="so-leitor-de-tela">Sua pergunta</label>
+            <textarea
+              id="pergunta"
+              #campo
+              rows="1"
+              maxlength="2000"
+              placeholder="Pergunte algo sobre os documentos"
+              aria-describedby="dica-compositor"
+              [value]="pergunta()"
+              (input)="pergunta.set(campo.value)"
+              (keydown.enter)="aoApertarEnter($any($event))"
+            ></textarea>
+            <div class="linha-envio">
+              <span class="dica" id="dica-compositor"><kbd>Enter</kbd> envia · <kbd>Shift</kbd> + <kbd>Enter</kbd> nova linha</span>
+              @if (emAndamento()) {
+                <button type="button" class="enviar parar" aria-label="Parar a resposta" title="Parar" (click)="parar()">
+                  <app-icone nome="parar" />
+                </button>
+              } @else {
+                <button type="submit" class="enviar" aria-label="Enviar pergunta" title="Enviar" [disabled]="!pergunta().trim()">
+                  <app-icone nome="seta" />
+                </button>
+              }
+            </div>
           </div>
         </form>
       </section>
 
       @if (fonteAberta(); as fonte) {
-        <aside class="fonte" aria-labelledby="titulo-fonte">
-          <div class="cabecalho-fonte">
-            <span class="numero">{{ fonte.numero }}</span>
-            <div>
-              <h2 id="titulo-fonte" #tituloFonte tabindex="-1">{{ fonte.documentoNome }}</h2>
-              @if (fonte.pagina) {
-                <p class="pagina">Página {{ fonte.pagina }}</p>
-              }
-            </div>
-            <button type="button" class="botao-texto fechar" (click)="fecharFonte()">Fechar</button>
-          </div>
-          <blockquote>{{ fonte.trecho }}</blockquote>
-          <p class="explicacao">Este é o trecho do documento que o Sabiá usou para responder. <kbd>Esc</kbd> fecha.</p>
-          <button type="button" class="botao-secundario" (click)="baixar(fonte)">Baixar o documento original</button>
-        </aside>
+        <div class="veu-fonte" aria-hidden="true" (click)="fecharFonte()"></div>
+        <app-painel-da-fonte
+          #painel
+          class="painel-fonte"
+          aria-labelledby="titulo-fonte"
+          role="complementary"
+          [citacao]="fonte.citacao"
+          [resposta]="fonte.resposta"
+          (fechar)="fecharFonte()"
+          (baixar)="baixar($event)"
+        />
       }
     </div>
   `,
@@ -242,35 +259,27 @@ export class Chat implements OnInit, OnDestroy {
   private readonly pendentes = inject(PerguntasPendentes);
   private readonly router = inject(Router);
   private readonly avisos = inject(Avisos);
+  private readonly lista = inject(ListaDeConversas);
   protected readonly sessao = inject(Sessao);
 
   protected readonly sugestoes = signal<string[]>([]);
-  protected readonly conversas = signal<Conversa[]>([]);
+  protected readonly documentosProntos = signal<number | null>(null);
   protected readonly mensagens = signal<Mensagem[]>([]);
   protected readonly emAndamento = signal<RespostaEmAndamento | null>(null);
   protected readonly pergunta = signal('');
   protected readonly carregando = signal(false);
   protected readonly erro = signal<string | null>(null);
-  protected readonly fonteAberta = signal<Citacao | null>(null);
-  protected readonly listaAberta = signal(false);
-  protected readonly filtro = signal('');
+  protected readonly fonteAberta = signal<FonteAberta | null>(null);
   protected readonly renomeando = signal(false);
   /** Texto lido por leitores de tela (o fio de mensagens não é uma região viva, para não ler cada palavra). */
   protected readonly anuncio = signal('');
 
-  protected readonly conversaAtual = computed(() => this.conversas().find((conversa) => conversa.id === this.id()));
-
-  protected readonly conversasFiltradas = computed(() => {
-    const termo = normalizar(this.filtro().trim());
-    return termo
-      ? this.conversas().filter((conversa) => normalizar(conversa.titulo).includes(termo))
-      : this.conversas();
-  });
+  protected readonly conversaAtual = computed(() => this.lista.itens().find((conversa) => conversa.id === this.id()));
 
   private readonly rolagem = viewChild<ElementRef<HTMLElement>>('rolagem');
   private readonly campo = viewChild<ElementRef<HTMLTextAreaElement>>('campo');
   private readonly campoTitulo = viewChild<ElementRef<HTMLInputElement>>('campoTitulo');
-  private readonly tituloFonte = viewChild<ElementRef<HTMLElement>>('tituloFonte');
+  private readonly painel = viewChild<PainelDaFonte>('painel');
   private cancelamento: AbortController | null = null;
   private origemDaFonte: HTMLElement | null = null;
 
@@ -282,8 +291,10 @@ export class Chat implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.carregarConversas();
     this.api.sugestoes().subscribe({ next: (lista) => this.sugestoes.set(lista) });
+    this.api.documentos().subscribe({
+      next: (documentos) => this.documentosProntos.set(documentos.filter((d) => d.status === 'PRONTO').length),
+    });
   }
 
   ngOnDestroy(): void {
@@ -305,6 +316,8 @@ export class Chat implements OnInit, OnDestroy {
     this.api.criarConversa().subscribe({
       next: (conversa) => {
         this.pendentes.guardar(conversa.id, texto);
+        // O servidor usa a primeira pergunta como título; a lista já mostra o mesmo enquanto a resposta chega.
+        this.lista.itens.update((lista) => [{ ...conversa, titulo: tituloDaPergunta(texto) }, ...lista]);
         this.router.navigate(['/chat', conversa.id]);
       },
       error: (falha) => {
@@ -323,6 +336,9 @@ export class Chat implements OnInit, OnDestroy {
     }
     this.emAndamento.set(null);
     this.cancelamento?.abort();
+    if (this.fonteAberta()?.mensagemId === 'andamento') {
+      this.fonteAberta.set(null);
+    }
     const parcial = parcialLocal(andamento);
     this.mensagens.update((lista) => [...lista, mensagemLocal('USUARIO', andamento.pergunta), ...parcial]);
     this.anuncio.set('Resposta interrompida.');
@@ -366,12 +382,12 @@ export class Chat implements OnInit, OnDestroy {
     return mensagem.id.startsWith('local-');
   }
 
-  protected abrirFonte(citacao: Citacao): void {
+  protected abrirFonte(citacao: Citacao, mensagemId: string, resposta: string): void {
     if (!this.fonteAberta()) {
       this.origemDaFonte = document.activeElement as HTMLElement | null;
     }
-    this.fonteAberta.set(citacao);
-    setTimeout(() => this.tituloFonte()?.nativeElement.focus());
+    this.fonteAberta.set({ citacao, mensagemId, resposta });
+    setTimeout(() => this.painel()?.focar());
   }
 
   protected fecharFonte(): void {
@@ -420,26 +436,21 @@ export class Chat implements OnInit, OnDestroy {
     if (!conversa || !limpo || limpo === conversa.titulo) {
       return;
     }
-    this.api.renomearConversa(conversa.id, limpo).subscribe({
-      next: (atualizada) => {
-        this.conversas.update((lista) => lista.map((c) => (c.id === atualizada.id ? atualizada : c)));
-        this.avisos.mostrar('Conversa renomeada.');
-      },
+    this.lista.renomear(conversa.id, limpo).subscribe({
+      next: () => this.avisos.mostrar('Conversa renomeada.'),
       error: (falha) => this.avisos.erro(mensagemDeErro(falha, 'Não foi possível renomear a conversa.')),
     });
   }
 
-  protected excluirConversa(conversa: Conversa): void {
-    if (!confirm(`Excluir a conversa "${conversa.titulo}"? Não dá para desfazer.`)) {
+  protected excluirConversa(): void {
+    const conversa = this.conversaAtual();
+    if (!conversa || !confirm(`Excluir a conversa "${conversa.titulo}"? Não dá para desfazer.`)) {
       return;
     }
-    this.api.excluirConversa(conversa.id).subscribe({
+    this.lista.excluir(conversa.id).subscribe({
       next: () => {
-        this.conversas.update((lista) => lista.filter((c) => c.id !== conversa.id));
         this.avisos.mostrar('Conversa excluída.');
-        if (this.id() === conversa.id) {
-          this.router.navigate(['/chat']);
-        }
+        this.router.navigate(['/chat']);
       },
       error: (falha) => this.avisos.erro(mensagemDeErro(falha, 'Não foi possível excluir a conversa.')),
     });
@@ -453,10 +464,11 @@ export class Chat implements OnInit, OnDestroy {
     this.erro.set(null);
     if (!id) {
       this.mensagens.set([]);
+      // No celular, focar o campo abriria o teclado sem a pessoa pedir.
+      if (matchMedia('(pointer: fine)').matches) {
+        setTimeout(() => this.campo()?.nativeElement.focus());
+      }
       return;
-    }
-    if (!this.conversas().some((conversa) => conversa.id === id)) {
-      this.carregarConversas();
     }
     this.carregando.set(true);
     this.api.mensagens(id).subscribe({
@@ -492,7 +504,7 @@ export class Chat implements OnInit, OnDestroy {
   private async enviar(conversaId: string, texto: string): Promise<void> {
     this.erro.set(null);
     this.emAndamento.set({ pergunta: texto, texto: '', citacoes: [] });
-    this.anuncio.set('Procurando nos documentos...');
+    this.anuncio.set('Buscando nos documentos...');
     this.rolarParaOFim(true);
     this.cancelamento = new AbortController();
     try {
@@ -511,6 +523,12 @@ export class Chat implements OnInit, OnDestroy {
             case 'fim':
               this.mensagens.update((lista) => [...lista, mensagemLocal('USUARIO', texto), evento.mensagem]);
               this.emAndamento.set(null);
+              // A fonte aberta durante a resposta passa a apontar para a mensagem salva.
+              this.fonteAberta.update((fonte) =>
+                fonte?.mensagemId === 'andamento'
+                  ? { ...fonte, mensagemId: evento.mensagem.id, resposta: evento.mensagem.conteudo }
+                  : fonte,
+              );
               this.anuncio.set('Resposta pronta.');
               this.rolarParaOFim();
               break;
@@ -532,12 +550,8 @@ export class Chat implements OnInit, OnDestroy {
         this.mensagens.update((lista) => [...lista, mensagemLocal('USUARIO', texto)]);
         this.emAndamento.set(null);
       }
-      this.carregarConversas();
+      this.lista.carregar();
     }
-  }
-
-  private carregarConversas(): void {
-    this.api.conversas().subscribe({ next: (lista) => this.conversas.set(lista) });
   }
 
   /** Rola até o fim, a não ser que a pessoa tenha subido para reler algo (aí respeita a posição). */
@@ -571,6 +585,12 @@ function parcialLocal(andamento: RespostaEmAndamento): Mensagem[] {
   }
   const citadas = andamento.citacoes.filter((fonte) => texto.includes(`[${fonte.numero}]`));
   return [mensagemLocal('ASSISTENTE', `${texto}\n\n${RESPOSTA_INTERROMPIDA}`, citadas)];
+}
+
+/** Mesma regra do servidor (Conversa.java): uma linha só, até 60 caracteres. */
+function tituloDaPergunta(pergunta: string): string {
+  const limpa = pergunta.replace(/\s+/g, ' ').trim();
+  return limpa.length > 60 ? `${limpa.slice(0, 57)}...` : limpa;
 }
 
 function estaDigitando(alvo: EventTarget | null): boolean {

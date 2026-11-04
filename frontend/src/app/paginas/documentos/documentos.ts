@@ -5,6 +5,8 @@ import { mensagemDeErro } from '../../core/autenticacao';
 import { data, tamanho } from '../../core/formatos';
 import { Documento, StatusDocumento } from '../../core/modelos';
 import { Sessao } from '../../core/sessao';
+import { Icone } from '../shell/icone';
+import { TipoDeArquivo } from '../shell/tipo-de-arquivo';
 import { PainelDeTrechos } from './painel-de-trechos';
 
 const ROTULO_DO_STATUS: Record<StatusDocumento, string> = {
@@ -14,46 +16,52 @@ const ROTULO_DO_STATUS: Record<StatusDocumento, string> = {
   ERRO: 'Erro',
 };
 
-const ROTULO_DO_TIPO: Record<Documento['tipo'], string> = {
-  PDF: 'PDF',
-  DOCX: 'Word',
-  TXT: 'Texto',
-  MARKDOWN: 'Markdown',
-};
-
 @Component({
   selector: 'app-documentos',
-  imports: [PainelDeTrechos],
+  imports: [PainelDeTrechos, Icone, TipoDeArquivo],
+  host: {
+    '(dragenter)': 'aoEntrarArrastando($event)',
+    '(dragover)': '$event.preventDefault()',
+    '(dragleave)': 'aoSairArrastando()',
+    '(drop)': 'aoSoltar($event)',
+  },
   template: `
     <div class="pagina">
-      <header>
+      <header class="cabecalho-pagina">
         <div>
           <h1>Documentos</h1>
-          <p class="resumo">
-            @if (documentos().length === 1) {
-              1 documento. O Sabiá só responde com base no que estiver aqui.
-            } @else {
-              {{ documentos().length }} documentos. O Sabiá só responde com base no que estiver aqui.
-            }
-          </p>
+          <p class="subtitulo">{{ resumo() }}</p>
         </div>
+        @if (sessao.admin()) {
+          <input
+            #seletor
+            type="file"
+            multiple
+            accept=".pdf,.docx,.txt,.md,.markdown"
+            class="so-leitor-de-tela"
+            tabindex="-1"
+            aria-hidden="true"
+            (change)="aoEscolher($event)"
+          />
+          <button type="button" class="botao" [disabled]="enviando()" (click)="seletor.click()">
+            @if (enviando()) {
+              <span class="girando claro" aria-hidden="true"></span>
+              Enviando...
+            } @else {
+              <app-icone nome="enviar" />
+              Enviar arquivos
+            }
+          </button>
+        }
       </header>
 
       @if (sessao.admin()) {
-        <label
-          class="area-envio"
-          [class.arrastando]="arrastando()"
-          (dragover)="$event.preventDefault(); arrastando.set(true)"
-          (dragleave)="arrastando.set(false)"
-          (drop)="aoSoltar($event)"
-        >
-          <input type="file" multiple accept=".pdf,.docx,.txt,.md,.markdown" (change)="aoEscolher($event)" />
-          <strong>{{ enviando() ? 'Enviando...' : 'Escolha arquivos ou arraste para cá' }}</strong>
-          <span>PDF, Word (.docx), texto ou Markdown, até 10 MB cada.</span>
-          <span>Um arquivo com o mesmo nome de um documento existente atualiza esse documento.</span>
-        </label>
+        <p class="formatos">
+          PDF, Word (.docx), texto ou Markdown, até 10 MB cada. Um arquivo com o mesmo nome de um documento existente
+          substitui esse documento.
+        </p>
       } @else {
-        <p class="aviso-membro">Só administradores enviam e excluem documentos. Você pode consultar a lista e baixar os originais.</p>
+        <p class="formatos">Só administradores enviam e excluem documentos. Você pode ver os trechos e baixar os originais.</p>
       }
 
       @if (erro()) {
@@ -65,26 +73,26 @@ const ROTULO_DO_TIPO: Record<Documento['tipo'], string> = {
 
       @if (carregado() && documentos().length === 0) {
         <div class="vazio">
-          <h2>Nenhum documento ainda</h2>
+          <app-icone nome="documento" [tamanho]="22" />
+          <h2>Nenhum documento</h2>
           <p>
             @if (sessao.admin()) {
-              Envie manuais, políticas ou perguntas frequentes. Assim que o processamento terminar, o Sabiá já consegue responder sobre eles.
+              Envie manuais, políticas ou perguntas frequentes. Depois do processamento, o Sabiá já responde com base neles.
             } @else {
-              Peça para um administrador da sua empresa enviar os documentos.
+              Peça para um administrador da empresa enviar os documentos.
             }
           </p>
         </div>
       } @else if (documentos().length > 0) {
-        <div class="rolagem-tabela">
+        <div class="quadro-tabela">
           <table class="tabela tabela-documentos">
             <thead>
               <tr>
                 <th scope="col">Nome</th>
-                <th scope="col">Tipo</th>
-                <th scope="col">Tamanho</th>
                 <th scope="col">Situação</th>
-                <th scope="col">Trechos</th>
-                <th scope="col">Enviado em</th>
+                <th scope="col" class="direita">Trechos</th>
+                <th scope="col" class="direita">Tamanho</th>
+                <th scope="col">Atualizado em</th>
                 <th scope="col"><span class="so-leitor-de-tela">Ações</span></th>
               </tr>
             </thead>
@@ -92,34 +100,74 @@ const ROTULO_DO_TIPO: Record<Documento['tipo'], string> = {
               @for (documento of documentos(); track documento.id) {
                 <tr>
                   <td class="nome">
-                    {{ documento.nome }}
-                    @if (documento.versao > 1) {
-                      <span class="versao" [title]="'Atualizado em ' + atualizadoEm(documento)">versão {{ documento.versao }}</span>
-                    }
-                    @if (documento.erro) {
-                      <span class="erro-documento">{{ documento.erro }}</span>
-                    }
+                    <div class="celula-nome">
+                      <app-tipo-de-arquivo [nome]="documento.nome" />
+                      <div>
+                        <span class="titulo">{{ documento.nome }}</span>
+                        @if (documento.versao > 1) {
+                          <span class="etiqueta" [title]="'Versão ' + documento.versao">v{{ documento.versao }}</span>
+                        }
+                        @if (documento.erro) {
+                          <span class="erro-documento">{{ documento.erro }}</span>
+                        }
+                      </div>
+                    </div>
                   </td>
-                  <td data-rotulo="Tipo">{{ tipo(documento) }}</td>
-                  <td class="numero" data-rotulo="Tamanho">{{ tamanhoDe(documento) }}</td>
                   <td data-rotulo="Situação">
-                    <span class="status" [attr.data-status]="documento.status">{{ rotulo(documento.status) }}</span>
+                    <span class="status" [attr.data-status]="documento.status">
+                      @if (documento.status === 'PROCESSANDO') {
+                        <span class="girando" aria-hidden="true"></span>
+                      } @else {
+                        <span class="ponto" aria-hidden="true"></span>
+                      }
+                      {{ rotulo(documento.status) }}
+                    </span>
                   </td>
-                  <td class="numero" data-rotulo="Trechos">{{ documento.status === 'PRONTO' ? documento.totalTrechos : '–' }}</td>
-                  <td class="numero" data-rotulo="Enviado em">{{ dataDe(documento) }}</td>
+                  <td class="direita numero-tabular" data-rotulo="Trechos">
+                    {{ documento.status === 'PRONTO' ? documento.totalTrechos : '–' }}
+                  </td>
+                  <td class="direita numero-tabular suave" data-rotulo="Tamanho">{{ tamanhoDe(documento) }}</td>
+                  <td class="numero-tabular suave" data-rotulo="Atualizado em">{{ dataDe(documento) }}</td>
                   <td class="acoes">
-                    @if (documento.status === 'PRONTO') {
-                      <button type="button" class="botao-texto" (click)="abrirTrechos(documento, $event)">Ver trechos</button>
-                    }
-                    <button type="button" class="botao-texto" (click)="baixar(documento)">Baixar</button>
+                    <button
+                      type="button"
+                      class="botao-icone"
+                      [attr.aria-label]="'Ver trechos de ' + documento.nome"
+                      title="Ver trechos"
+                      [disabled]="documento.status !== 'PRONTO'"
+                      (click)="abrirTrechos(documento, $event)"
+                    >
+                      <app-icone nome="trechos" />
+                    </button>
+                    <button
+                      type="button"
+                      class="botao-icone"
+                      [attr.aria-label]="'Baixar ' + documento.nome"
+                      title="Baixar o original"
+                      (click)="baixar(documento)"
+                    >
+                      <app-icone nome="baixar" />
+                    </button>
                     @if (sessao.admin()) {
                       <button
                         type="button"
-                        class="botao-texto"
+                        class="botao-icone"
+                        [attr.aria-label]="'Reprocessar ' + documento.nome"
+                        title="Reprocessar"
                         [disabled]="documento.status === 'ENVIADO' || documento.status === 'PROCESSANDO'"
                         (click)="reprocessar(documento)"
-                      >Reprocessar</button>
-                      <button type="button" class="botao-texto perigo" (click)="excluir(documento)">Excluir</button>
+                      >
+                        <app-icone nome="recarregar" />
+                      </button>
+                      <button
+                        type="button"
+                        class="botao-icone perigo"
+                        [attr.aria-label]="'Excluir ' + documento.nome"
+                        title="Excluir"
+                        (click)="excluir(documento)"
+                      >
+                        <app-icone nome="lixeira" />
+                      </button>
                     }
                   </td>
                 </tr>
@@ -130,144 +178,166 @@ const ROTULO_DO_TIPO: Record<Documento['tipo'], string> = {
       }
     </div>
 
+    @if (arrastando() && sessao.admin()) {
+      <div class="soltar" aria-hidden="true">
+        <div>
+          <app-icone nome="enviar" [tamanho]="24" />
+          <strong>Solte os arquivos para enviar</strong>
+          <span>PDF, Word, texto ou Markdown, até 10 MB cada</span>
+        </div>
+      </div>
+    }
+
     @if (trechosDe(); as documento) {
       <app-painel-de-trechos [documento]="documento" (fechar)="fecharTrechos()" />
     }
   `,
   styles: `
-    .pagina {
-      max-width: 72rem;
-      margin: 0 auto;
-      padding: 2rem clamp(1rem, 4vw, 2.5rem) 4rem;
-      display: grid;
-      gap: 1.5rem;
+    :host {
+      display: block;
+      min-height: 100%;
     }
-    h1 {
-      font-size: var(--t-titulo);
+    .cabecalho-pagina {
+      margin-bottom: 0.5rem;
     }
-    .resumo {
-      margin: 0.35rem 0 0;
-      color: var(--tinta-suave);
-    }
-    .area-envio {
-      display: grid;
-      gap: 0.25rem;
-      justify-items: center;
-      padding: 1.75rem 1rem;
-      border: 1.5px dashed var(--linha-forte);
-      border-radius: var(--raio);
-      background: var(--superficie);
-      text-align: center;
-      cursor: pointer;
-    }
-    .area-envio:hover,
-    .area-envio.arrastando,
-    .area-envio:focus-within {
-      border-color: var(--musgo);
-      background: var(--musgo-claro);
-    }
-    .area-envio input {
-      position: absolute;
-      opacity: 0;
-      width: 1px;
-      height: 1px;
-    }
-    .area-envio span {
-      color: var(--tinta-suave);
+    .formatos {
+      max-width: 46rem;
+      margin-bottom: 1.25rem;
+      color: var(--tinta-fraca);
       font-size: var(--t-pequeno);
     }
-    .aviso-membro {
-      margin: 0;
-      color: var(--tinta-suave);
+    .alerta-erro,
+    .aviso-envio {
+      margin-bottom: 1rem;
     }
     .aviso-envio {
-      margin: 0;
-      padding: 0.6rem 0.8rem;
-      border-left: 3px solid var(--musgo);
-      border-radius: 0 var(--raio) var(--raio) 0;
-      background: var(--musgo-claro);
-      color: var(--musgo-escuro);
+      padding: 0.55rem 0.75rem;
+      border: 1px solid color-mix(in srgb, var(--acento) 25%, transparent);
+      border-radius: var(--raio);
+      background: var(--acento-suave);
+      color: var(--tinta);
       font-size: var(--t-pequeno);
     }
-    .versao {
-      display: inline-block;
-      margin-left: 0.4rem;
-      padding: 0 0.4rem;
-      border: 1px solid var(--linha-forte);
-      border-radius: 999px;
-      font-size: 0.75rem;
-      font-weight: 400;
-      color: var(--tinta-suave);
-      vertical-align: 0.1em;
+    .girando.claro {
+      border-color: rgba(255, 255, 255, 0.35);
+      border-top-color: #fff;
     }
     .vazio {
-      padding: 3rem 1rem;
+      display: grid;
+      justify-items: center;
+      gap: 0.4rem;
+      padding: 3.5rem 1rem;
+      border: 1px dashed var(--linha-forte);
+      border-radius: var(--raio);
       text-align: center;
+      color: var(--tinta-fraca);
     }
     .vazio h2 {
-      font-size: var(--t-grande);
+      margin-top: 0.25rem;
+      font-size: var(--t-medio);
+      color: var(--tinta);
     }
     .vazio p {
-      max-width: 36rem;
-      margin: 0.5rem auto 0;
-      color: var(--tinta-suave);
-    }
-    .rolagem-tabela {
-      overflow-x: auto;
+      max-width: 30rem;
+      font-size: var(--t-pequeno);
     }
     .nome {
-      font-weight: 700;
+      min-width: 16rem;
+    }
+    .celula-nome {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.7rem;
+    }
+    .nome app-tipo-de-arquivo {
+      margin-top: 0.05rem;
+    }
+    .titulo {
+      font-weight: 500;
       word-break: break-word;
-      min-width: 12rem;
+    }
+    .nome .etiqueta {
+      margin-left: 0.4rem;
+      vertical-align: 0.05em;
     }
     .erro-documento {
       display: block;
-      margin-top: 0.25rem;
-      font-weight: 400;
+      margin-top: 0.2rem;
       font-size: var(--t-pequeno);
       color: var(--erro);
     }
-    .numero {
-      font-variant-numeric: tabular-nums;
+    .direita {
+      text-align: right;
+    }
+    .suave {
+      color: var(--tinta-suave);
       white-space: nowrap;
     }
     .status {
       display: inline-flex;
       align-items: center;
-      gap: 0.4rem;
-      font-size: var(--t-pequeno);
+      gap: 0.45rem;
       white-space: nowrap;
+      color: var(--tinta-suave);
     }
-    .status::before {
-      content: '';
-      width: 0.55rem;
-      height: 0.55rem;
+    .ponto {
+      width: 0.45rem;
+      height: 0.45rem;
       border-radius: 50%;
       background: var(--linha-forte);
     }
-    .status[data-status='PRONTO']::before {
-      background: var(--musgo);
-    }
-    .status[data-status='PROCESSANDO']::before {
-      background: var(--marca-texto);
+    .status[data-status='PRONTO'] .ponto {
+      background: var(--sucesso);
     }
     .status[data-status='ERRO'] {
       color: var(--erro);
     }
-    .status[data-status='ERRO']::before {
+    .status[data-status='ERRO'] .ponto {
       background: var(--erro);
     }
+    .status .girando {
+      width: 0.7rem;
+      height: 0.7rem;
+    }
     .acoes {
+      width: 1%;
       white-space: nowrap;
       text-align: right;
+      padding-top: 0.4rem;
+      padding-bottom: 0.4rem;
     }
-    .acoes button:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-      text-decoration: none;
+    .soltar {
+      position: fixed;
+      inset: 0;
+      z-index: 25;
+      display: grid;
+      place-items: center;
+      padding: 1.5rem;
+      background: color-mix(in srgb, var(--fundo) 80%, transparent);
+      backdrop-filter: blur(2px);
+      pointer-events: none;
+    }
+    .soltar div {
+      display: grid;
+      justify-items: center;
+      gap: 0.4rem;
+      width: min(32rem, 100%);
+      padding: 3rem 1.5rem;
+      border: 2px dashed var(--acento);
+      border-radius: var(--raio-grande);
+      background: var(--superficie);
+      color: var(--acento);
+      text-align: center;
+    }
+    .soltar strong {
+      color: var(--tinta);
+    }
+    .soltar span {
+      color: var(--tinta-fraca);
+      font-size: var(--t-pequeno);
     }
     /* No celular, cada documento vira um cartão em vez de uma linha larga demais. */
-    @media (max-width: 640px) {
+    @media (max-width: 680px) {
       .tabela-documentos thead {
         position: absolute;
         width: 1px;
@@ -277,27 +347,32 @@ const ROTULO_DO_TIPO: Record<Documento['tipo'], string> = {
       }
       .tabela-documentos,
       .tabela-documentos tbody,
-      .tabela-documentos tr,
       .tabela-documentos td {
         display: block;
       }
       .tabela-documentos tr {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0.35rem 1rem;
-        padding: 0.9rem 0;
+        gap: 0.5rem 1rem;
+        padding: 0.875rem;
         border-bottom: 1px solid var(--linha);
+      }
+      .tabela-documentos tbody tr:last-child {
+        border-bottom: 0;
       }
       .tabela-documentos td {
         padding: 0;
         border: 0;
+        text-align: left;
+      }
+      .tabela-documentos tbody tr:hover td {
+        background: none;
       }
       .tabela-documentos td[data-rotulo]::before {
         content: attr(data-rotulo);
         display: block;
-        font-size: 0.75rem;
-        font-weight: 700;
-        color: var(--tinta-suave);
+        font-size: var(--t-mini);
+        color: var(--tinta-fraca);
       }
       .tabela-documentos .nome,
       .tabela-documentos .acoes {
@@ -305,8 +380,8 @@ const ROTULO_DO_TIPO: Record<Documento['tipo'], string> = {
         min-width: 0;
       }
       .tabela-documentos .acoes {
-        text-align: left;
-        white-space: normal;
+        width: auto;
+        padding: 0;
         margin-left: -0.4rem;
       }
     }
@@ -324,10 +399,22 @@ export class Documentos implements OnInit, OnDestroy {
   protected readonly aviso = signal<string | null>(null);
   protected readonly trechosDe = signal<Documento | null>(null);
   private origemDosTrechos: HTMLElement | null = null;
+  /** dragenter e dragleave disparam em cada elemento filho; o contador diz se ainda está sobre a página. */
+  private profundidadeDoArraste = 0;
   private readonly temPendentes = computed(() =>
     this.documentos().some((d) => d.status === 'ENVIADO' || d.status === 'PROCESSANDO'),
   );
   private atualizacao: ReturnType<typeof setInterval> | null = null;
+
+  protected readonly resumo = computed(() => {
+    const lista = this.documentos();
+    if (!this.carregado()) {
+      return '';
+    }
+    const total = lista.length === 1 ? '1 documento' : `${lista.length} documentos`;
+    const prontos = lista.filter((d) => d.status === 'PRONTO').length;
+    return prontos === lista.length ? total : `${total} · ${prontos} ${prontos === 1 ? 'pronto' : 'prontos'}`;
+  });
 
   ngOnInit(): void {
     this.carregar();
@@ -349,19 +436,11 @@ export class Documentos implements OnInit, OnDestroy {
     return ROTULO_DO_STATUS[status];
   }
 
-  protected tipo(documento: Documento): string {
-    return ROTULO_DO_TIPO[documento.tipo];
-  }
-
   protected tamanhoDe(documento: Documento): string {
     return tamanho(documento.tamanhoBytes);
   }
 
   protected dataDe(documento: Documento): string {
-    return data(documento.criadoEm);
-  }
-
-  protected atualizadoEm(documento: Documento): string {
     return data(documento.atualizadoEm);
   }
 
@@ -383,10 +462,29 @@ export class Documentos implements OnInit, OnDestroy {
     campo.value = '';
   }
 
+  protected aoEntrarArrastando(evento: DragEvent): void {
+    if (!this.sessao.admin() || !evento.dataTransfer?.types.includes('Files')) {
+      return;
+    }
+    evento.preventDefault();
+    this.profundidadeDoArraste++;
+    this.arrastando.set(true);
+  }
+
+  protected aoSairArrastando(): void {
+    this.profundidadeDoArraste = Math.max(0, this.profundidadeDoArraste - 1);
+    if (this.profundidadeDoArraste === 0) {
+      this.arrastando.set(false);
+    }
+  }
+
   protected aoSoltar(evento: DragEvent): void {
     evento.preventDefault();
+    this.profundidadeDoArraste = 0;
     this.arrastando.set(false);
-    void this.enviar(Array.from(evento.dataTransfer?.files ?? []));
+    if (this.sessao.admin()) {
+      void this.enviar(Array.from(evento.dataTransfer?.files ?? []));
+    }
   }
 
   protected baixar(documento: Documento): void {

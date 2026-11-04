@@ -4,6 +4,8 @@ import { Api } from '../../core/api';
 import { mensagemDeErro } from '../../core/autenticacao';
 import { Documento, TrechoIndexado } from '../../core/modelos';
 import { normalizar } from '../../core/texto';
+import { Icone } from '../shell/icone';
+import { TipoDeArquivo } from '../shell/tipo-de-arquivo';
 
 interface Pedaco {
   texto: string;
@@ -16,6 +18,7 @@ interface Pedaco {
  */
 @Component({
   selector: 'app-painel-de-trechos',
+  imports: [Icone, TipoDeArquivo],
   host: {
     '(document:keydown.escape)': 'fechar.emit()',
   },
@@ -23,29 +26,35 @@ interface Pedaco {
     <div class="fundo" (click)="fechar.emit()" aria-hidden="true"></div>
     <aside class="painel" role="dialog" aria-modal="true" aria-labelledby="titulo-trechos">
       <header>
-        <div>
-          <p class="sobretitulo">Trechos indexados</p>
+        <app-tipo-de-arquivo [nome]="documento().nome" />
+        <div class="titulo">
           <h2 id="titulo-trechos">{{ documento().nome }}</h2>
+          <p>Trechos indexados, na ordem do documento</p>
         </div>
-        <button #botaoFechar type="button" class="botao-texto" (click)="fechar.emit()">Fechar</button>
+        <button #botaoFechar type="button" class="botao-icone" aria-label="Fechar" title="Fechar (Esc)" (click)="fechar.emit()">
+          <app-icone nome="fechar" />
+        </button>
       </header>
 
       <div class="busca">
-        <label for="busca-trechos" class="so-leitor-de-tela">Buscar nos trechos</label>
-        <input
-          id="busca-trechos"
-          #campo
-          type="search"
-          placeholder="Buscar nos trechos"
-          autocomplete="off"
-          [value]="busca()"
-          (input)="busca.set(campo.value)"
-        />
+        <div class="campo-busca">
+          <app-icone nome="busca" [tamanho]="14" />
+          <label for="busca-trechos" class="so-leitor-de-tela">Buscar nos trechos</label>
+          <input
+            id="busca-trechos"
+            #campo
+            type="search"
+            placeholder="Buscar nos trechos"
+            autocomplete="off"
+            [value]="busca()"
+            (input)="busca.set(campo.value)"
+          />
+        </div>
         <span class="contagem" role="status">
           @if (carregando()) {
             Carregando...
           } @else if (busca().trim()) {
-            {{ filtrados().length }} de {{ trechos().length }} trechos
+            {{ filtrados().length }} de {{ trechos().length }}
           } @else {
             {{ trechos().length }} {{ trechos().length === 1 ? 'trecho' : 'trechos' }}
           }
@@ -60,10 +69,11 @@ interface Pedaco {
         @for (trecho of filtrados(); track trecho.ordem) {
           <li>
             <p class="meta">
-              Trecho {{ trecho.ordem + 1 }}
+              <span>#{{ trecho.ordem + 1 }}</span>
               @if (trecho.pagina) {
-                · página {{ trecho.pagina }}
+                <span>página {{ trecho.pagina }}</span>
               }
+              <span>{{ trecho.texto.length }} caracteres</span>
             </p>
             <!-- Numa linha só: o texto usa white-space: pre-wrap e qualquer espaço do template apareceria. -->
             <p class="texto">@for (pedaco of destacar(trecho.texto); track $index) {<span [class.destaque]="pedaco.destaque">{{ pedaco.texto }}</span>}</p>
@@ -81,7 +91,8 @@ interface Pedaco {
       position: fixed;
       inset: 0;
       z-index: 20;
-      background: rgba(30, 35, 24, 0.35);
+      background: var(--veu);
+      animation: aparecer 140ms ease-out;
     }
     .painel {
       position: fixed;
@@ -89,94 +100,131 @@ interface Pedaco {
       right: 0;
       bottom: 0;
       z-index: 21;
-      width: min(40rem, 100%);
+      width: min(38rem, 100%);
       display: grid;
-      grid-template-rows: auto auto auto 1fr;
-      background: var(--superficie);
+      grid-template-rows: auto auto auto minmax(0, 1fr);
+      background: var(--fundo);
       border-left: 1px solid var(--linha);
-      box-shadow: -12px 0 32px var(--sombra);
+      box-shadow: var(--sombra-2);
+      animation: deslizar 180ms ease-out;
     }
     header {
       display: flex;
       align-items: flex-start;
-      gap: 1rem;
-      padding: 1.25rem 1.5rem 0.75rem;
+      gap: 0.75rem;
+      padding: 1rem 0.75rem 1rem 1.25rem;
+      border-bottom: 1px solid var(--linha);
     }
-    header > div {
+    header app-tipo-de-arquivo {
+      margin-top: 0.1rem;
+    }
+    .titulo {
       flex: 1;
       min-width: 0;
     }
-    .sobretitulo {
-      margin: 0 0 0.2rem;
-      font-size: var(--t-pequeno);
-      font-weight: 700;
-      color: var(--tinta-suave);
-    }
     h2 {
-      font-size: var(--t-grande);
+      font-size: var(--t-medio);
       overflow-wrap: anywhere;
+    }
+    .titulo p {
+      margin-top: 0.1rem;
+      color: var(--tinta-fraca);
+      font-size: var(--t-pequeno);
     }
     .busca {
       display: flex;
-      flex-wrap: wrap;
       align-items: center;
-      gap: 0.5rem 1rem;
-      padding: 0 1.5rem 1rem;
+      gap: 0.75rem;
+      padding: 0.75rem 1.25rem;
       border-bottom: 1px solid var(--linha);
     }
-    .busca input {
-      flex: 1 1 14rem;
-      font: inherit;
-      color: var(--tinta);
-      background: var(--papel);
-      border: 1px solid var(--linha-forte);
-      border-radius: var(--raio);
-      padding: 0.5rem 0.7rem;
+    .campo-busca {
+      position: relative;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      color: var(--tinta-fraca);
     }
-    .busca input:focus {
+    .campo-busca app-icone {
+      position: absolute;
+      left: 0.65rem;
+      pointer-events: none;
+    }
+    .campo-busca input {
+      width: 100%;
+      height: 2rem;
+      padding: 0 0.6rem 0 2rem;
+      border: 1px solid var(--linha-forte);
+      border-radius: var(--raio-pequeno);
+      background: var(--superficie);
+      color: var(--tinta);
+      font: inherit;
+    }
+    .campo-busca input:focus {
       outline: none;
-      border-color: var(--musgo);
+      border-color: var(--acento);
       box-shadow: var(--foco);
     }
     .contagem {
+      flex: none;
       font-size: var(--t-pequeno);
-      color: var(--tinta-suave);
+      color: var(--tinta-fraca);
+      font-variant-numeric: tabular-nums;
     }
     .alerta-erro {
-      margin: 1rem 1.5rem 0;
+      margin: 1rem 1.25rem 0;
     }
     .trechos {
       list-style: none;
       margin: 0;
-      padding: 0.5rem 1.5rem 2rem;
+      padding: 0.25rem 1.25rem 2rem;
       overflow-y: auto;
     }
     .trechos li {
       padding: 1rem 0;
       border-bottom: 1px solid var(--linha);
     }
+    .trechos li:last-child {
+      border-bottom: 0;
+    }
     .meta {
-      margin: 0 0 0.35rem;
-      font-size: var(--t-pequeno);
-      font-weight: 700;
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 0.4rem;
+      font-size: var(--t-mini);
+      color: var(--tinta-fraca);
+      font-variant-numeric: tabular-nums;
+    }
+    .meta span:first-child {
       color: var(--tinta-suave);
+      font-weight: 500;
     }
     .texto {
-      margin: 0;
-      font-family: var(--fonte-leitura);
+      font-size: var(--t-base);
       line-height: 1.65;
+      color: var(--tinta);
       white-space: pre-wrap;
       overflow-wrap: anywhere;
     }
     .destaque {
-      background: var(--marca-texto-suave);
-      color: inherit;
+      background: var(--marca-texto);
       border-radius: 2px;
-      padding: 0 1px;
+      padding: 0.05em 1px;
     }
     .vazio {
-      color: var(--tinta-suave);
+      color: var(--tinta-fraca);
       border-bottom: 0;
+    }
+    @keyframes aparecer {
+      from {
+        opacity: 0;
+      }
+    }
+    @keyframes deslizar {
+      from {
+        transform: translateX(1.5rem);
+        opacity: 0;
+      }
     }
   `,
 })

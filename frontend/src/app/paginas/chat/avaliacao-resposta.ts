@@ -3,142 +3,126 @@ import { Observable } from 'rxjs';
 
 import { Api } from '../../core/api';
 import { Avaliacao } from '../../core/modelos';
+import { Icone } from '../shell/icone';
 
 /**
- * "Esta resposta ajudou?" embaixo de cada resposta. O voto é salvo na hora; o comentário
+ * Botões de "útil" e "não ajudou" embaixo de cada resposta. O voto é salvo na hora; o comentário
  * (quando a resposta não ajudou) é opcional e vai num segundo envio.
  */
 @Component({
   selector: 'app-avaliacao-resposta',
+  imports: [Icone],
   template: `
-    <div class="linha">
-      <span class="pergunta" [id]="'avaliar-' + mensagemId()">Esta resposta ajudou?</span>
-      <div class="opcoes" role="group" [attr.aria-labelledby]="'avaliar-' + mensagemId()">
-        <button
-          type="button"
-          class="opcao"
-          [class.marcada]="atual()?.util === true"
-          [attr.aria-pressed]="atual()?.util === true"
-          [disabled]="salvando()"
-          (click)="votar(true)"
-        >
-          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 9v8H4V9h3Zm2 8V9l3.2-5.6c.3-.5.9-.7 1.4-.4.6.3.8.9.7 1.5L13.6 8H17c.9 0 1.6.9 1.4 1.8l-1.3 5.6c-.2.9-1 1.6-1.9 1.6H9Z" /></svg>
-          Sim
-        </button>
-        <button
-          type="button"
-          class="opcao"
-          [class.marcada]="atual()?.util === false"
-          [attr.aria-pressed]="atual()?.util === false"
-          [disabled]="salvando()"
-          (click)="votar(false)"
-        >
-          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M13 11V3h3v8h-3Zm-2-8v8l-3.2 5.6c-.3.5-.9.7-1.4.4-.6-.3-.8-.9-.7-1.5L6.4 12H3c-.9 0-1.6-.9-1.4-1.8l1.3-5.6C3.1 3.7 3.9 3 4.8 3H11Z" /></svg>
-          Não
-        </button>
-      </div>
-      @if (mensagemDeRetorno()) {
-        <span class="retorno" role="status">{{ mensagemDeRetorno() }}</span>
-      }
+    <span class="so-leitor-de-tela" [id]="'avaliar-' + mensagemId()">Esta resposta ajudou?</span>
+    <div class="opcoes" role="group" [attr.aria-labelledby]="'avaliar-' + mensagemId()">
+      <button
+        type="button"
+        class="botao-icone pequeno"
+        title="Resposta útil"
+        [class.marcada]="atual()?.util === true"
+        [attr.aria-pressed]="atual()?.util === true"
+        [disabled]="salvando()"
+        (click)="votar(true)"
+      >
+        <app-icone nome="util" [tamanho]="15" /><span class="so-leitor-de-tela">Sim</span>
+      </button>
+      <button
+        type="button"
+        class="botao-icone pequeno"
+        title="Não ajudou"
+        [class.marcada]="atual()?.util === false"
+        [attr.aria-pressed]="atual()?.util === false"
+        [disabled]="salvando()"
+        (click)="votar(false)"
+      >
+        <app-icone nome="nao-util" [tamanho]="15" /><span class="so-leitor-de-tela">Não</span>
+      </button>
     </div>
+    @if (mensagemDeRetorno()) {
+      <span class="retorno" role="status">{{ mensagemDeRetorno() }}</span>
+    }
 
     @if (comentando()) {
-      <form class="comentario" (submit)="$event.preventDefault(); enviarComentario()">
-        <label [for]="'comentario-' + mensagemId()">O que faltou na resposta? (opcional)</label>
-        <textarea
-          [id]="'comentario-' + mensagemId()"
-          #campo
-          rows="2"
-          maxlength="500"
-          placeholder="Ex.: não falou do horário de sábado"
-          [value]="comentario()"
-          (input)="comentario.set(campo.value)"
-          (keydown.escape)="comentando.set(false)"
-        ></textarea>
-        <div class="acoes">
-          <button type="button" class="botao-texto" (click)="comentando.set(false)">Agora não</button>
-          <button type="submit" class="botao-secundario" [disabled]="!comentario().trim() || salvando()">Enviar</button>
-        </div>
-      </form>
+      <div class="linha-comentario">
+        <form class="comentario" (submit)="$event.preventDefault(); enviarComentario()">
+          <label [for]="'comentario-' + mensagemId()">O que faltou na resposta? (opcional)</label>
+          <textarea
+            [id]="'comentario-' + mensagemId()"
+            #campo
+            rows="2"
+            maxlength="500"
+            placeholder="Ex.: não falou do horário de sábado"
+            [value]="comentario()"
+            (input)="comentario.set(campo.value)"
+            (keydown.escape)="comentando.set(false)"
+          ></textarea>
+          <div class="acoes">
+            <button type="button" class="botao-texto" (click)="comentando.set(false)">
+              Agora não
+            </button>
+            <button type="submit" class="botao" [disabled]="!comentario().trim() || salvando()">
+              Enviar
+            </button>
+          </div>
+        </form>
+      </div>
     }
   `,
   styles: `
     :host {
-      display: block;
-      margin-top: 0.6rem;
-      max-width: 68ch;
-    }
-    .linha {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 0.5rem 0.75rem;
-      font-size: var(--t-pequeno);
-      color: var(--tinta-suave);
+      display: contents;
     }
     .opcoes {
       display: flex;
-      gap: 0.35rem;
+      gap: 0.125rem;
     }
-    .opcao {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
-      min-height: 1.9rem;
-      padding: 0 0.6rem;
-      border: 1px solid var(--linha);
-      border-radius: 999px;
-      background: transparent;
-      color: var(--tinta-suave);
-      font: inherit;
-      cursor: pointer;
+    .marcada,
+    .marcada:hover:not(:disabled) {
+      color: var(--acento);
+      background: var(--acento-suave);
     }
-    .opcao svg {
-      width: 0.95rem;
-      height: 0.95rem;
-      fill: currentColor;
-    }
-    .opcao:hover:not(:disabled) {
-      border-color: var(--linha-forte);
-      color: var(--tinta);
-    }
-    .opcao.marcada {
-      border-color: var(--musgo);
-      background: var(--musgo-claro);
-      color: var(--musgo);
-      font-weight: 700;
-    }
-    .opcao:disabled {
+    button:disabled {
       cursor: progress;
     }
     .retorno {
-      color: var(--musgo);
+      margin-left: 0.4rem;
+      font-size: var(--t-pequeno);
+      color: var(--tinta-fraca);
+    }
+    .linha-comentario {
+      flex-basis: 100%;
+      padding-left: 0.3rem;
     }
     .comentario {
       display: grid;
-      gap: 0.4rem;
-      margin-top: 0.6rem;
+      gap: 0.5rem;
+      max-width: 34rem;
+      margin-top: 0.5rem;
       padding: 0.75rem;
       border: 1px solid var(--linha);
       border-radius: var(--raio);
       background: var(--superficie);
+      box-shadow: var(--sombra-1);
     }
     label {
       font-size: var(--t-pequeno);
-      font-weight: 700;
+      font-weight: 500;
     }
     textarea {
       font: inherit;
       color: var(--tinta);
-      background: var(--papel);
+      background: var(--fundo);
       border: 1px solid var(--linha-forte);
-      border-radius: var(--raio);
+      border-radius: var(--raio-pequeno);
       padding: 0.5rem 0.65rem;
       resize: vertical;
     }
+    textarea::placeholder {
+      color: var(--tinta-fraca);
+    }
     textarea:focus {
       outline: none;
-      border-color: var(--musgo);
+      border-color: var(--acento);
       box-shadow: var(--foco);
     }
     .acoes {
@@ -147,8 +131,8 @@ import { Avaliacao } from '../../core/modelos';
       align-items: center;
       gap: 0.5rem;
     }
-    .acoes .botao-secundario {
-      min-height: 2rem;
+    .acoes .botao {
+      height: 2rem;
     }
   `,
 })
@@ -197,7 +181,9 @@ export class AvaliacaoResposta {
           this.comentando.set(true);
         } else {
           this.comentando.set(false);
-          this.mensagemDeRetorno.set(nova.util ? 'Obrigado pelo retorno.' : 'Obrigado. Isso ajuda a melhorar os documentos.');
+          this.mensagemDeRetorno.set(
+            nova.util ? 'Obrigado pelo retorno.' : 'Obrigado. Isso ajuda a melhorar os documentos.',
+          );
         }
       },
       error: () => {

@@ -11,12 +11,14 @@ import { Marca } from '../shell/marca';
   selector: 'app-cadastro',
   imports: [ReactiveFormsModule, RouterLink, Marca],
   template: `
-    <div class="pagina">
-      <a routerLink="/entrar" class="marca" aria-label="Voltar para a entrada"><app-marca /></a>
+    <div class="tela">
+      <header>
+        <a routerLink="/entrar" class="marca" aria-label="Voltar para a entrada"><app-marca /></a>
+      </header>
 
-      <section aria-labelledby="titulo">
-        <h1 id="titulo">Cadastre sua empresa</h1>
-        <p class="resumo">Você será o administrador: envia os documentos e convida as pessoas da equipe.</p>
+      <main aria-labelledby="titulo">
+        <h1 id="titulo">Cadastrar empresa</h1>
+        <p class="resumo">Você fica como administrador: envia os documentos e adiciona as pessoas da equipe.</p>
 
         <form [formGroup]="formulario" (ngSubmit)="cadastrar()" novalidate>
           <div class="campo">
@@ -33,8 +35,8 @@ import { Marca } from '../shell/marca';
           </div>
           <div class="campo">
             <label for="senha">Senha</label>
-            <input id="senha" type="password" formControlName="senha" autocomplete="new-password" />
-            <span class="dica">Pelo menos 8 caracteres.</span>
+            <input id="senha" type="password" formControlName="senha" autocomplete="new-password" aria-describedby="dica-senha" />
+            <span class="dica" id="dica-senha">Pelo menos 8 caracteres.</span>
           </div>
 
           @if (erro()) {
@@ -47,42 +49,44 @@ import { Marca } from '../shell/marca';
         </form>
 
         <p class="voltar">Já tem conta? <a routerLink="/entrar">Entrar</a></p>
-      </section>
+      </main>
     </div>
   `,
   styles: `
-    .pagina {
+    .tela {
       min-height: 100dvh;
       display: grid;
-      align-content: start;
-      justify-items: center;
-      gap: 3rem;
-      padding: 2rem 1.25rem 4rem;
+      grid-template-rows: auto 1fr;
+      padding: 1.25rem 1.5rem;
     }
-    .marca {
-      justify-self: start;
-      color: inherit;
+    .marca:hover {
       text-decoration: none;
     }
-    section {
+    main {
+      align-self: center;
       width: 100%;
-      max-width: 26rem;
+      max-width: 22.5rem;
+      margin: 2.5rem auto;
     }
     h1 {
-      font-size: var(--t-titulo);
+      font-size: 1.375rem;
+      letter-spacing: -0.02em;
     }
     .resumo {
-      color: var(--tinta-suave);
-      margin: 0.5rem 0 2rem;
+      margin: 0.4rem 0 1.5rem;
+      color: var(--tinta-fraca);
     }
     form {
       display: grid;
-      gap: 1rem;
+      gap: 0.875rem;
+    }
+    form .botao {
+      margin-top: 0.25rem;
     }
     .voltar {
-      margin-top: 1.5rem;
+      margin-top: 1.25rem;
       font-size: var(--t-pequeno);
-      color: var(--tinta-suave);
+      color: var(--tinta-fraca);
     }
   `,
 })

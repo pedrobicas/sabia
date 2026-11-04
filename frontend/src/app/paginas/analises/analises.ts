@@ -24,10 +24,10 @@ const DIA_LONGO = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', day: 'num
   imports: [RouterLink],
   template: `
     <div class="pagina">
-      <header class="topo">
+      <header class="cabecalho-pagina">
         <div>
           <h1>Análises</h1>
-          <p class="resumo">Como a equipe usa o Sabiá e o que ainda falta nos documentos.</p>
+          <p class="subtitulo">Uso do Sabiá e perguntas que os documentos ainda não cobrem.</p>
         </div>
         <div class="periodo" role="group" aria-label="Período">
           @for (opcao of periodos; track opcao) {
@@ -51,7 +51,7 @@ const DIA_LONGO = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', day: 'num
             <div class="indicador">
               <span class="rotulo">Perguntas feitas</span>
               <span class="valor">{{ numero(p.totalPerguntas) }}</span>
-              <span class="contexto">nos últimos {{ p.periodoDias }} dias</span>
+              <span class="contexto">últimos {{ p.periodoDias }} dias</span>
             </div>
             <div class="indicador">
               <span class="rotulo">Respondidas pelos documentos</span>
@@ -61,7 +61,7 @@ const DIA_LONGO = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', day: 'num
             <div class="indicador">
               <span class="rotulo">Sem resposta</span>
               <span class="valor">{{ numero(p.semResposta) }}</span>
-              <span class="contexto">{{ p.semResposta === 1 ? 'pergunta que os documentos não cobrem' : 'perguntas que os documentos não cobrem' }}</span>
+              <span class="contexto">{{ p.semResposta === 1 ? 'pergunta fora dos documentos' : 'perguntas fora dos documentos' }}</span>
             </div>
             <div class="indicador">
               <span class="rotulo">Avaliadas como úteis</span>
@@ -176,7 +176,7 @@ const DIA_LONGO = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', day: 'num
               <div class="cabecalho-cartao">
                 <h2 id="titulo-lacunas">Lacunas na documentação</h2>
               </div>
-              <p class="explicacao">Perguntas que o Sabiá não conseguiu responder com os documentos atuais. As mais repetidas vêm primeiro.</p>
+              <p class="explicacao">Perguntas sem resposta nos documentos atuais, das mais repetidas para as menos.</p>
               @if (p.perguntasSemResposta.length === 0) {
                 <p class="vazio">Nenhuma pergunta ficou sem resposta neste período.</p>
               } @else {
@@ -190,7 +190,7 @@ const DIA_LONGO = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', day: 'num
                     </li>
                   }
                 </ol>
-                <a routerLink="/documentos" class="botao-secundario chamada">Enviar um documento que responda</a>
+                <a routerLink="/documentos" class="chamada">Enviar um documento que responda</a>
               }
             </section>
 
@@ -198,7 +198,7 @@ const DIA_LONGO = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', day: 'num
               <div class="cabecalho-cartao">
                 <h2 id="titulo-mal-avaliadas">Respostas que não ajudaram</h2>
               </div>
-              <p class="explicacao">Respostas marcadas como "não ajudou", com o comentário de quem perguntou.</p>
+              <p class="explicacao">Marcadas como "não ajudou", com o comentário de quem perguntou.</p>
               @if (p.respostasMalAvaliadas.length === 0) {
                 <p class="vazio">Nenhuma resposta foi mal avaliada neste período.</p>
               } @else {
@@ -241,105 +241,91 @@ const DIA_LONGO = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', day: 'num
           </section>
         </div>
       } @else if (carregando()) {
-        <p class="carregando">Carregando as análises...</p>
+        <p class="carregando"><span class="girando" aria-hidden="true"></span>Carregando as análises</p>
       }
     </div>
   `,
   styles: `
-    .pagina {
-      max-width: 72rem;
-      margin: 0 auto;
-      padding: 2rem clamp(1rem, 4vw, 2.5rem) 4rem;
-    }
-    .topo {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: flex-end;
-      justify-content: space-between;
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-    }
-    h1 {
-      font-size: var(--t-titulo);
-    }
-    .resumo {
-      margin: 0.35rem 0 0;
-      color: var(--tinta-suave);
-    }
     .periodo {
       display: inline-flex;
-      padding: 0.2rem;
+      padding: 0.15rem;
       border: 1px solid var(--linha);
-      border-radius: calc(var(--raio) + 2px);
-      background: var(--superficie);
+      border-radius: var(--raio);
+      background: var(--fundo-lateral);
     }
     .periodo button {
+      height: 1.75rem;
       border: 0;
       background: none;
-      padding: 0.35rem 0.8rem;
-      border-radius: var(--raio);
+      padding: 0 0.75rem;
+      border-radius: var(--raio-pequeno);
       font: inherit;
       font-size: var(--t-pequeno);
-      font-weight: 700;
-      color: var(--tinta-suave);
+      font-weight: 500;
+      color: var(--tinta-fraca);
       cursor: pointer;
     }
     .periodo button:hover {
       color: var(--tinta);
     }
     .periodo button.ativo {
-      background: var(--musgo-claro);
-      color: var(--musgo);
+      background: var(--superficie);
+      color: var(--tinta);
+      box-shadow: var(--sombra-1), 0 0 0 1px var(--linha);
     }
     .corpo {
       display: grid;
-      gap: 1.25rem;
+      gap: 1rem;
       transition: opacity 150ms ease;
     }
     .corpo.atualizando {
       opacity: 0.55;
     }
     .carregando {
-      color: var(--tinta-suave);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--tinta-fraca);
     }
 
     /* Indicadores */
     .indicadores {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 1px;
-      background: var(--linha);
       border: 1px solid var(--linha);
       border-radius: var(--raio);
+      background: var(--superficie);
       overflow: hidden;
     }
     .indicador {
       display: grid;
-      gap: 0.15rem;
+      gap: 0.2rem;
       align-content: start;
-      padding: 1rem 1.15rem;
-      background: var(--superficie);
+      padding: 1rem 1.15rem 1.05rem;
+    }
+    .indicador + .indicador {
+      border-left: 1px solid var(--linha);
     }
     .indicador .rotulo {
       font-size: var(--t-pequeno);
-      font-weight: 700;
+      font-weight: 500;
       color: var(--tinta-suave);
     }
     .indicador .valor {
-      font-family: var(--fonte-interface);
-      font-size: var(--t-destaque);
-      font-weight: 700;
-      line-height: 1.1;
-      letter-spacing: -0.01em;
+      font-size: var(--t-numero);
+      font-weight: 600;
+      line-height: 1.15;
+      letter-spacing: -0.025em;
+      font-variant-numeric: tabular-nums;
     }
     .indicador .contexto {
-      font-size: var(--t-pequeno);
-      color: var(--tinta-suave);
+      font-size: var(--t-mini);
+      color: var(--tinta-fraca);
     }
 
     /* Cartões */
     .cartao {
-      padding: 1.15rem 1.25rem 1.25rem;
+      padding: 1rem 1.15rem 1.15rem;
       background: var(--superficie);
       border: 1px solid var(--linha);
       border-radius: var(--raio);
@@ -353,15 +339,12 @@ const DIA_LONGO = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', day: 'num
       margin-bottom: 0.75rem;
     }
     .cabecalho-cartao h2 {
-      font-size: var(--t-medio);
+      font-size: var(--t-base);
       margin-right: auto;
     }
-    .cabecalho-cartao .botao-texto {
-      margin-left: -0.4rem;
-    }
     .explicacao {
-      margin: -0.35rem 0 1rem;
-      color: var(--tinta-suave);
+      margin: -0.5rem 0 0.9rem;
+      color: var(--tinta-fraca);
       font-size: var(--t-pequeno);
     }
     .vazio {
@@ -369,7 +352,7 @@ const DIA_LONGO = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', day: 'num
       padding: 1rem;
       border: 1px dashed var(--linha-forte);
       border-radius: var(--raio);
-      color: var(--tinta-suave);
+      color: var(--tinta-fraca);
       font-size: var(--t-pequeno);
       text-align: center;
     }
@@ -387,8 +370,8 @@ const DIA_LONGO = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', day: 'num
     }
     .amostra {
       display: inline-block;
-      width: 0.7rem;
-      height: 0.7rem;
+      width: 0.625rem;
+      height: 0.625rem;
       border-radius: 2px;
     }
     .s1 {
@@ -403,24 +386,24 @@ const DIA_LONGO = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', day: 'num
       display: grid;
       grid-template-columns: auto minmax(0, 1fr);
       gap: 0.6rem;
-      padding: 0.25rem 0.25rem 1.75rem;
+      padding: 0.5rem 0.25rem 1.75rem;
       border-radius: var(--raio);
     }
     .eixo-y {
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      height: 12rem;
+      height: 13rem;
       margin-top: -0.5em;
       margin-bottom: -0.5em;
-      font-size: 0.75rem;
-      color: var(--tinta-suave);
+      font-size: var(--t-mini);
+      color: var(--tinta-fraca);
       text-align: right;
       font-variant-numeric: tabular-nums;
     }
     .plot {
       position: relative;
-      height: 12rem;
+      height: 13rem;
     }
     .grade {
       position: absolute;
@@ -454,33 +437,33 @@ const DIA_LONGO = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', day: 'num
     .coluna.em-foco::before {
       content: '';
       position: absolute;
-      inset: 0 0 0 0;
-      background: var(--musgo-claro);
-      opacity: 0.6;
+      inset: 0;
+      border-radius: 3px;
+      background: var(--superficie-2);
     }
     .pilha {
       position: relative;
-      width: min(72%, 2.25rem);
+      width: min(70%, 1.75rem);
       min-width: 2px;
       height: 100%;
       display: flex;
       flex-direction: column-reverse;
-      gap: 2px;
+      gap: 1px;
     }
     .segmento {
       flex: none;
       min-height: 2px;
     }
     .segmento:last-child {
-      border-radius: 3px 3px 0 0;
+      border-radius: 2px 2px 0 0;
     }
     .rotulo-x {
       position: absolute;
-      top: calc(100% + 0.4rem);
+      top: calc(100% + 0.45rem);
       left: 50%;
       transform: translateX(-50%);
-      font-size: 0.75rem;
-      color: var(--tinta-suave);
+      font-size: var(--t-mini);
+      color: var(--tinta-fraca);
       white-space: nowrap;
     }
     .sem-dados {
@@ -489,7 +472,7 @@ const DIA_LONGO = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', day: 'num
       display: grid;
       place-items: center;
       margin: 0;
-      color: var(--tinta-suave);
+      color: var(--tinta-fraca);
       font-size: var(--t-pequeno);
     }
     .dica-grafico {
@@ -497,15 +480,19 @@ const DIA_LONGO = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', day: 'num
       top: 0;
       z-index: 2;
       display: grid;
-      gap: 0.2rem;
+      gap: 0.25rem;
       min-width: 11rem;
       padding: 0.55rem 0.7rem;
-      background: var(--tinta);
-      color: var(--superficie);
+      background: var(--superficie);
+      color: var(--tinta);
+      border: 1px solid var(--linha);
       border-radius: var(--raio);
       font-size: var(--t-pequeno);
       pointer-events: none;
-      box-shadow: 0 6px 18px var(--sombra);
+      box-shadow: var(--sombra-2);
+    }
+    .dica-grafico strong {
+      font-weight: 600;
     }
     .dica-grafico.meio {
       transform: translateX(-50%);
@@ -516,10 +503,12 @@ const DIA_LONGO = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', day: 'num
     .dica-grafico b {
       margin-left: auto;
       padding-left: 0.75rem;
+      font-weight: 600;
       font-variant-numeric: tabular-nums;
     }
     .dica-grafico span {
       display: flex;
+      color: var(--tinta-suave);
     }
     .rolagem-tabela {
       overflow-x: auto;
@@ -535,7 +524,7 @@ const DIA_LONGO = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', day: 'num
     .duas-colunas {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 1.25rem;
+      gap: 1rem;
       align-items: start;
     }
     .lista-lacunas,
@@ -557,25 +546,30 @@ const DIA_LONGO = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', day: 'num
       padding-top: 0;
     }
     .texto-pergunta {
-      font-weight: 700;
+      font-weight: 500;
       overflow-wrap: anywhere;
     }
     .meta {
-      font-size: var(--t-pequeno);
-      color: var(--tinta-suave);
+      font-size: var(--t-mini);
+      color: var(--tinta-fraca);
     }
     .comentario {
-      font-family: var(--fonte-leitura);
-      font-style: italic;
+      padding-left: 0.65rem;
+      border-left: 2px solid var(--linha-forte);
+      color: var(--tinta);
+      quotes: none;
     }
     .trecho-resposta {
       margin: 0;
       font-size: var(--t-pequeno);
-      color: var(--tinta-suave);
+      color: var(--tinta-fraca);
       overflow-wrap: anywhere;
     }
     .chamada {
-      margin-top: 1rem;
+      display: inline-block;
+      margin-top: 0.75rem;
+      font-size: var(--t-pequeno);
+      font-weight: 500;
     }
 
     /* Documentos mais citados */
@@ -584,35 +578,38 @@ const DIA_LONGO = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', day: 'num
       margin: 0;
       padding: 0;
       display: grid;
-      gap: 0.55rem;
+      gap: 0.6rem;
     }
     .barras-documentos li {
       display: grid;
-      grid-template-columns: minmax(8rem, 16rem) minmax(0, 1fr) 7rem;
+      grid-template-columns: minmax(8rem, 15rem) minmax(0, 1fr) 6.5rem;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.9rem;
     }
     .nome-documento {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
       font-size: var(--t-pequeno);
-      font-weight: 700;
     }
     .trilho {
       display: block;
-      height: 0.6rem;
+      height: 0.5rem;
+      border-radius: 999px;
+      background: var(--superficie-2);
+      overflow: hidden;
     }
     .barra {
       display: block;
       height: 100%;
       min-width: 2px;
       background: var(--serie-1);
-      border-radius: 0 3px 3px 0;
+      border-radius: 999px;
     }
     .quantidade {
       font-size: var(--t-pequeno);
-      color: var(--tinta-suave);
+      color: var(--tinta-fraca);
+      text-align: right;
       font-variant-numeric: tabular-nums;
     }
 
@@ -620,13 +617,19 @@ const DIA_LONGO = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', day: 'num
       .indicadores {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
+      .indicador:nth-child(3) {
+        border-left: 0;
+      }
+      .indicador:nth-child(n + 3) {
+        border-top: 1px solid var(--linha);
+      }
       .duas-colunas {
         grid-template-columns: minmax(0, 1fr);
       }
     }
     @media (max-width: 560px) {
       .indicador .valor {
-        font-size: var(--t-titulo);
+        font-size: 1.4rem;
       }
       .barras-documentos li {
         grid-template-columns: minmax(0, 1fr) auto;
