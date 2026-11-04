@@ -11,7 +11,7 @@ Assistente de base de conhecimento para empresas. Você envia os documentos da e
 
 ## O que ele faz
 
-- **Responde com a fonte.** Cada informação vem com um marcador clicável que abre o trecho exato, o nome do documento e a página (em PDFs).
+- **Responde com a fonte.** Cada informação vem com um marcador clicável que abre o trecho usado, com a frase correspondente destacada, o nome do documento e a página (em PDFs).
 - **Não inventa.** Sem trecho relevante, a resposta é "não encontrei", sem nem chamar o modelo de IA.
 - **Isola as empresas.** Várias empresas usam o mesmo sistema, e uma nunca enxerga os documentos da outra.
 - **Resiste a injeção de prompt.** Instruções escondidas dentro de um documento são tratadas como texto, não como ordens.
@@ -27,7 +27,7 @@ Assistente de base de conhecimento para empresas. Você envia os documentos da e
 
 | Entrada | Tema escuro |
 | --- | --- |
-| ![Tela de entrada com exemplo de resposta citada](docs/imagens/entrada.png) | ![Conversa no tema escuro](docs/imagens/conversa-escura.png) |
+| ![Tela de entrada com as empresas da demonstração](docs/imagens/entrada.png) | ![Conversa no tema escuro](docs/imagens/conversa-escura.png) |
 
 ## Como funciona
 
@@ -66,6 +66,7 @@ flowchart LR
 - **Custo sob controle.** Perguntas sem trecho relevante não chamam o modelo, há um limite de perguntas por hora por usuário, e parar uma resposta cancela a geração no servidor (a parte já escrita fica salva).
 - **Demonstração pública sem conta compartilhada.** O botão "Entrar como..." cria um usuário temporário, sem senha, só daquele visitante. Assim ninguém vê as conversas de outro visitante nem troca a senha de todo mundo. As sugestões da tela inicial são fixas, para ninguém ver o que outro digitou, e o usuário é apagado (com as conversas) por uma tarefa agendada depois que o token vence. Há um teto de perguntas por hora somando todos os visitantes e um limite de contas novas por IP.
 - **Login protegido.** Depois de 5 senhas erradas para o mesmo e-mail (ou 30 do mesmo IP) em 15 minutos, o login responde 429 até a janela passar.
+- **Frase de origem destacada.** No painel da fonte, a frase do trecho mais parecida com o que a resposta afirmou fica marcada. A comparação roda no navegador, por palavras em comum (sem acento e sem palavras vazias), sem outra chamada ao modelo.
 - **Acessível.** Contraste conferido nos temas claro e escuro, navegação por teclado (atalhos `/` e `Esc`, foco que volta para onde estava), anúncios curtos para leitores de tela em vez de ler cada palavra que chega, e gráfico com versão em tabela.
 - **Qualidade medida.** A pasta [`avaliacao`](avaliacao) tem um gabarito de 24 perguntas e um script que mede acerto, citação correta, recusa e resistência a injeção.
 
